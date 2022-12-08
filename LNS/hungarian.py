@@ -41,9 +41,6 @@ def hungarian(graph, agent_pos, tasks):
         first = False
 
     h_tasks = dict()
-    # for k in list(task_idx.keys()):
-    #     h_tasks[k] = (list(task_idx.values())[k], [tasks[i] for i in range(len(list(task_idx.values())[k]))])
-
     for k in list(task_idx.keys()):
         h_tasks[k] = [{i: tasks[i]} for i in list(task_idx.values())[k]]
 

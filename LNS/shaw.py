@@ -14,12 +14,6 @@ def removal(tasks_idx, tasks, graph, N=2):
     sorted_r = dict(sorted(rs.items(), key=lambda x: x[1], reverse=True))
     removal_idx = [chosen] + [list(sorted_r.keys())[s] for s in range(N)]
 
-    # ind = list()
-    # for ri in removal_idx:
-    #     for i, a in enumerate(tasks_idx.values()):
-    #         if np.argwhere(np.array(a) == ri).shape == (1, 1):
-    #             ind.append([i, np.argwhere(np.array(a) == ri).item()])
-
     return removal_idx
 
 
