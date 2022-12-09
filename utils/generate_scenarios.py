@@ -14,7 +14,11 @@ from graph.generate_graph import graph
 """
 
 
-def save_scenarios(itr=10, size=16, obs_ratio=0.1):
+def save_scenarios(itr=10, size=16, obs_ratio=0.1, C=2, M=5, N=50):
+    # C: task length -> if 2, tau=(s, g)
+    # M: the number of agents
+    # N: the number of tasks
+
     for it in range(itr):
 
         # 1
@@ -24,21 +28,18 @@ def save_scenarios(itr=10, size=16, obs_ratio=0.1):
 
         # 2
         g = graph(instance)
-        # visualize(g)
+        # vis_graph(g)
 
         # 3
-        C = 2
-        num_agents = 5
-        num_tasks = 10
         # empty_grid = (instance.reshape(-1) == 0).nonzero()[0].tolist()
         empty_idx = list(range(len(g)))
-        agent_idx = random.sample(empty_idx, num_agents)
-        tasks_len = random.choices(list(range(2, C + 1)), k=num_tasks)
+        agent_idx = random.sample(empty_idx, M)
+        tasks_len = random.choices(list(range(2, C + 1)), k=N)
         agent_pos = np.array([a for a in g])[agent_idx]
         empty_idx = list(set(empty_idx) - set(agent_idx))
 
         tasks = list()
-        for i in range(num_tasks):
+        for i in range(N):
             temp_idx = random.sample(empty_idx, tasks_len[i])
             empty_idx = list(set(empty_idx) - set(temp_idx))
             tasks.append(np.array([t for t in g])[temp_idx].tolist())
@@ -73,8 +74,3 @@ def load_scenarios(dir):
 
 if __name__ == "__main__":
     save_scenarios(10, 16, .1)
-    save_scenarios(10, 16, .2)
-    save_scenarios(10, 32, .1)
-    save_scenarios(10, 32, .2)
-    save_scenarios(10, 64, .1)
-    save_scenarios(10, 64, .2)

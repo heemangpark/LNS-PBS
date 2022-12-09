@@ -4,7 +4,7 @@ import networkx as nx
 import numpy as np
 
 
-def graph(world, rand_coord=True):
+def graph(world, rand_coord=False):
     world = deepcopy(world)
     m, n = world.shape[0], world.shape[1]
     g = nx.grid_2d_graph(m, n)

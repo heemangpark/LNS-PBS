@@ -10,7 +10,7 @@ def vis_graph(graph):
         pos[list(graph.nodes)[i]] = graph.nodes[list(graph.nodes)[i]]['loc']
     nx.draw(graph, pos=pos, with_labels=False, node_size=50)
 
-    dir = './fig/'
+    dir = '../fig/'
     try:
         if not os.path.exists(dir):
             os.makedirs(dir)
