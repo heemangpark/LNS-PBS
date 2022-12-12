@@ -10,7 +10,7 @@ Python implementation of "Multi-Goal Multi-Agent Pickup and Delivery [1]"
 * Generates an higher-level task allocation
 
 3. Run main_eecbs.py
-* Create folder /EECBS/ in /LNS-PBS/ by running git clone https://github.com/Jiaoyang-Li/EECBS.git
+* Create folder submodule EECBS/ in folder LNS-PBS/ by running: git submodule add https://github.com/Jiaoyang-Li/EECBS.git EECBS
 * All copyrights are in the possession of https://github.com/Jiaoyang-Li/EECBS
 
 ## References
