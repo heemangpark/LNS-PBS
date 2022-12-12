@@ -15,22 +15,23 @@ from utils.vis_graph import vis_graph
 """
 
 
-def save_scenarios(itr=10, size=32, obs_ratio=.2, C=2, M=10, N=10):
-    # C: task length -> if 2, tau=(s, g)
-    # M: the number of agents
-    # N: the number of tasks
+def save_scenarios(itr=10, size=32, obs_ratio=.2, C=1, M=100, N=100):
+    """
+    C: task length -> if 2, tau=(s, g)
+    M: the number of agents
+    N: the number of tasks
+    """
+
+    # 1
+    instance = np.zeros((size, size))
+    obstacle = np.random.random((size, size)) <= obs_ratio
+    instance[obstacle] = 1
+
+    # 2
+    g = graph(instance)
+    vis_graph(g)
 
     for it in range(itr):
-
-        # 1
-        instance = np.zeros((size, size))
-        obstacle = np.random.random((size, size)) <= obs_ratio
-        instance[obstacle] = 1
-
-        # 2
-        g = graph(instance)
-        vis_graph(g)
-
         # 3
         # empty_grid = (instance.reshape(-1) == 0).nonzero()[0].tolist()
         empty_idx = list(range(len(g)))

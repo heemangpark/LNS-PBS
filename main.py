@@ -5,9 +5,9 @@ from LNS.regret import f_ijk, get_regret
 from LNS.shaw import removal
 from utils.generate_scenarios import load_scenarios
 from utils.soc_ms import cost
-from utils.vis_graph import vis_init, vis_assign
+from utils.vis_graph import vis_init
 
-scenario = load_scenarios('./instance_scenarios/32_32_0.2/scenario_1.pkl')
+scenario = load_scenarios('./instance_scenarios/32_32_0.2/scenario_2.pkl')
 # scenario = load_scenarios('./instance_scenarios/16_16_0.2/scenario_1.pkl')
 grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
 vis_init(graph, agent_pos, total_tasks)

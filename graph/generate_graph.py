@@ -37,4 +37,14 @@ def graph(world, rand_coord=False):
         dist = loc.sum(-1).reshape(-1, 1) ** .5
         g.edges[e_id]['dist'] = dist
 
+    validity = [c for c in nx.connected_components(g)]
+    if len(validity) != 1:
+        largest = max(nx.connected_components(g), key=len)
+        validity.remove(largest)
+    else:
+        pass
+    for comps in validity:
+        for comp in comps:
+            g.remove_node(comp)
+
     return g

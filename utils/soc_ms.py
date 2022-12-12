@@ -12,4 +12,5 @@ def cost(solution, graph):
         for s, g in zip(path[:-1], path[1:]):
             agent_cost += graph_astar(graph, s, g)[1]
         agent_cost_list.append(agent_cost)
+
     return sum(agent_cost_list), max(agent_cost_list)
