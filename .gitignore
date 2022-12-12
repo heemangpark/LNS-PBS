@@ -1,4 +1,7 @@
+.git/
 .idea/
 data/
 fig/
 instance_scenarios/
+
+__pycache__/

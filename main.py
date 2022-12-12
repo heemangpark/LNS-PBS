@@ -7,7 +7,8 @@ from utils.generate_scenarios import load_scenarios
 from utils.soc_ms import cost
 from utils.vis_graph import vis_init, vis_assign
 
-scenario = load_scenarios('./instance_scenarios/16_16_0.1/scenario_1.pkl')
+scenario = load_scenarios('./instance_scenarios/32_32_0.2/scenario_1.pkl')
+# scenario = load_scenarios('./instance_scenarios/16_16_0.2/scenario_1.pkl')
 grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
 vis_init(graph, agent_pos, total_tasks)
 
@@ -16,10 +17,10 @@ h_time = time.time()
 task_idx, tasks = hungarian(graph, agent_pos, total_tasks)
 print('INIT || SOC: {:.4f} / MAKESPAN: {:.4f} / TIMECOST: {:.4f}'
       .format(cost(tasks, graph)[0], cost(tasks, graph)[1], time.time() - h_time))
-vis_assign(graph, agent_pos, tasks, 'hungarian')
+# vis_assign(graph, agent_pos, tasks, 'hungarian')
 
 """Second step: LNS"""
-for itr in range(100):
+for itr in range(10):
     lns_time = time.time()
 
     # Destroy
@@ -42,4 +43,4 @@ for itr in range(100):
 
     print('{}_Solution || SOC: {:.4f} / MAKESPAN: {:.4f} / TIMECOST: {:.4f}'
           .format(itr + 1, cost(tasks, graph)[0], cost(tasks, graph)[1], time.time() - lns_time))
-    vis_assign(graph, agent_pos, tasks, itr + 1)
+    # vis_assign(graph, agent_pos, tasks, itr + 1)

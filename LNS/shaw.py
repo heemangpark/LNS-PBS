@@ -1,10 +1,15 @@
 import random
 
+import numpy as np
+
 from utils.astar import graph_astar
 
 
 def removal(tasks_idx, tasks, graph, N=2):
-    t_idx = [v[i] for v in tasks_idx.values() for i in range(len(v))]
+    t_idx = list()
+    for v in tasks_idx.values():
+        t_idx += [v]
+    t_idx = np.array(t_idx).reshape(-1).tolist()
     chosen = random.choice(t_idx)
     t_idx.remove(chosen)
 

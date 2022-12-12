@@ -15,7 +15,7 @@ from utils.vis_graph import vis_graph
 """
 
 
-def save_scenarios(itr=10, size=32, obs_ratio=.2, C=2, M=100, N=200):
+def save_scenarios(itr=10, size=32, obs_ratio=.2, C=2, M=10, N=10):
     # C: task length -> if 2, tau=(s, g)
     # M: the number of agents
     # N: the number of tasks
@@ -35,7 +35,10 @@ def save_scenarios(itr=10, size=32, obs_ratio=.2, C=2, M=100, N=200):
         # empty_grid = (instance.reshape(-1) == 0).nonzero()[0].tolist()
         empty_idx = list(range(len(g)))
         agent_idx = random.sample(empty_idx, M)
-        tasks_len = random.choices(list(range(2, C + 1)), k=N)
+        if (C == 1) or (C == 2):
+            tasks_len = [C for _ in range(N)]
+        else:
+            tasks_len = random.choices(list(range(1, C + 1)), k=N)
         agent_pos = np.array([a for a in g])[agent_idx]
         empty_idx = list(set(empty_idx) - set(agent_idx))
 
