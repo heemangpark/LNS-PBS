@@ -5,6 +5,7 @@ import random
 import numpy as np
 
 from graph.generate_graph import graph
+from utils.vis_graph import vis_graph
 
 """
 1. Create random grid graph (user defined size, obstacle ratio)
@@ -14,7 +15,7 @@ from graph.generate_graph import graph
 """
 
 
-def save_scenarios(itr=10, size=16, obs_ratio=0.1, C=2, M=5, N=50):
+def save_scenarios(itr=10, size=32, obs_ratio=.2, C=2, M=100, N=200):
     # C: task length -> if 2, tau=(s, g)
     # M: the number of agents
     # N: the number of tasks
@@ -28,7 +29,7 @@ def save_scenarios(itr=10, size=16, obs_ratio=0.1, C=2, M=5, N=50):
 
         # 2
         g = graph(instance)
-        # vis_graph(g)
+        vis_graph(g)
 
         # 3
         # empty_grid = (instance.reshape(-1) == 0).nonzero()[0].tolist()
@@ -73,4 +74,4 @@ def load_scenarios(dir):
 
 
 if __name__ == "__main__":
-    save_scenarios(10, 16, .1)
+    save_scenarios()

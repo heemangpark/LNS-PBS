@@ -9,14 +9,7 @@ def vis_graph(graph):
     for i in range(len(graph)):
         pos[list(graph.nodes)[i]] = graph.nodes[list(graph.nodes)[i]]['loc']
     nx.draw(graph, pos=pos, with_labels=False, node_size=50)
-
-    dir = '../fig/'
-    try:
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-    except OSError:
-        print("Error: Cannot create the directory.")
-    plt.savefig(dir + 'graph.png')
+    plt.savefig('graph.png')
     plt.clf()
 
 
