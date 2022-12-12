@@ -15,7 +15,7 @@ from utils.vis_graph import vis_graph
 """
 
 
-def save_scenarios(itr=10, size=32, obs_ratio=.2, C=1, M=100, N=100):
+def save_scenarios(itr=10, size=32, obs_ratio=20, C=1, M=100, N=100):
     """
     C: task length -> if 2, tau=(s, g)
     M: the number of agents
@@ -24,7 +24,7 @@ def save_scenarios(itr=10, size=32, obs_ratio=.2, C=1, M=100, N=100):
 
     # 1
     instance = np.zeros((size, size))
-    obstacle = np.random.random((size, size)) <= obs_ratio
+    obstacle = np.random.random((size, size)) <= obs_ratio/100
     instance[obstacle] = 1
 
     # 2
@@ -51,7 +51,7 @@ def save_scenarios(itr=10, size=32, obs_ratio=.2, C=1, M=100, N=100):
 
         # 4
         datas = [instance, g, agent_pos, tasks]
-        dir = '../instance_scenarios/{}_{}_{}/'.format(size, size, obs_ratio)
+        dir = '../scenarios/{}{}{}_{}_{}_{}/'.format(size, size, obs_ratio, C, M, N)
 
         try:
             if not os.path.exists(dir):
