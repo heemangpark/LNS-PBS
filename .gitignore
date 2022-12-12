@@ -1,7 +1,6 @@
 __pycache__/
 .git/
 .idea/
-data/
 fig/
 instance_scenarios/
 
