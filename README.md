@@ -10,7 +10,8 @@ Python implementation of "Multi-Goal Multi-Agent Pickup and Delivery [1]"
 * Generates an higher-level task allocation
 
 3. Run main_eecbs.py
-* All copyrights under https://github.com/Jiaoyang-Li/EECBS
+* EECBS is released under USC – Research License
+* All copyrights are in the possession of https://github.com/Jiaoyang-Li/EECBS
 * Operates EECBS lower-level path finding
 
 ## References
