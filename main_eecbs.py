@@ -4,8 +4,9 @@ import sys
 from utils.solver_util import save_map, save_scenario
 from utils.generate_scenarios import load_scenarios, save_scenarios
 
-save_scenarios(M=2, N=2)
-scenario = load_scenarios('323220_1_5_5/scenario_4.pkl')
+M = 2
+save_scenarios(M=M, N=M)
+scenario = load_scenarios('323220_1_{}_{}/scenario_4.pkl'.format(M, M))
 grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
 
 scenario_name = 'test'
@@ -24,7 +25,7 @@ c = [solver_path + "eecbs",
      "-o",
      solver_path + "test.csv",
      "--outputPaths=paths.txt",
-     "-k", "50", "-t", "60", "--suboptimality=1.2"]
+     "-k", "{}".format(M), "-t", "60", "--suboptimality=1.2"]
 
 subprocess.run(c)
 
