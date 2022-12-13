@@ -11,6 +11,7 @@ Python implementation of "Multi-Goal Multi-Agent Pickup and Delivery [1]"
    - All copyrights of EECBS are in the possession of https://github.com/Jiaoyang-Li/EECBS
    - Create submodule /EECBS under dir /LNS-PBS by running
      - git submodule add https://github.com/Jiaoyang-Li/EECBS.git EECBS
+     - or git submodule add --force https://github.com/Jiaoyang-Li/EECBS.git EECBS
      
 ## References
 [1] Xu, Qinghong, et al. "Multi-Goal Multi-Agent Pickup and Delivery." arXiv preprint arXiv:2208.01223 (2022).
