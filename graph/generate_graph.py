@@ -4,20 +4,26 @@ import networkx as nx
 import numpy as np
 
 
-def graph(world, rand_coord=False):
-    g = gen_graph(world, rand_coord=rand_coord)
+def gen_graph(size=32, obs=20, rand_coord=False):
+    instance = np.zeros((size, size))
+    obstacle = np.random.random((size, size)) <= obs/100
+    instance[obstacle] = 1
+    g = tool(instance, rand_coord=rand_coord)
     components = [c for c in nx.connected_components(g)]
-    if len(components) != 1:
-        while len(components) == 1:
-            g = gen_graph(world, rand_coord=rand_coord)
-            components = [c for c in nx.connected_components(g)]
 
-    return g
+    while len(components) != 1:
+        instance = np.zeros((size, size))
+        obstacle = np.random.random((size, size)) <= obs / 100
+        instance[obstacle] = 1
+        g = tool(instance, rand_coord=rand_coord)
+        components = [c for c in nx.connected_components(g)]
+
+    return instance, g
 
 
-def gen_graph(world, rand_coord=False):
-    world = deepcopy(world)
-    m, n = world.shape[0], world.shape[1]
+def tool(instance, rand_coord=False):
+    instance = deepcopy(instance)
+    m, n = instance.shape[0], instance.shape[1]
     g = nx.grid_2d_graph(m, n)
 
     if rand_coord:
@@ -38,9 +44,9 @@ def gen_graph(world, rand_coord=False):
 
     for id, n_id in enumerate(g.nodes()):
         g.nodes[n_id]['loc'] = np.stack([xs, ys], -1)[id].tolist()
-        g.nodes[n_id]['type'] = int(world.reshape(-1)[id])
+        g.nodes[n_id]['type'] = int(instance.reshape(-1)[id])
 
-    for r, c in zip(world.nonzero()[0], world.nonzero()[1]):
+    for r, c in zip(instance.nonzero()[0], instance.nonzero()[1]):
         g.remove_node((r, c))
 
     for id, e_id in enumerate(g.edges()):
