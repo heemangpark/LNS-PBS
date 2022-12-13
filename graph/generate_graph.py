@@ -5,6 +5,17 @@ import numpy as np
 
 
 def graph(world, rand_coord=False):
+    g = gen_graph(world, rand_coord=rand_coord)
+    components = [c for c in nx.connected_components(g)]
+    if len(components) != 1:
+        while len(components) == 1:
+            g = gen_graph(world, rand_coord=rand_coord)
+            components = [c for c in nx.connected_components(g)]
+
+    return g
+
+
+def gen_graph(world, rand_coord=False):
     world = deepcopy(world)
     m, n = world.shape[0], world.shape[1]
     g = nx.grid_2d_graph(m, n)
@@ -36,15 +47,5 @@ def graph(world, rand_coord=False):
         loc = (np.array(g.nodes[e_id[0]]['loc']) - np.array(g.nodes[e_id[1]]['loc'])) ** 2
         dist = loc.sum(-1).reshape(-1, 1) ** .5
         g.edges[e_id]['dist'] = dist
-
-    validity = [c for c in nx.connected_components(g)]
-    if len(validity) != 1:
-        largest = max(nx.connected_components(g), key=len)
-        validity.remove(largest)
-    else:
-        pass
-    for comps in validity:
-        for comp in comps:
-            g.remove_node(comp)
 
     return g
