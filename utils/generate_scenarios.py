@@ -1,11 +1,15 @@
 import os.path
 import pickle
 import random
-
+import os
 import numpy as np
 
 from graph.generate_graph import gen_graph
 from utils.vis_graph import vis_graph
+from pathlib import Path
+
+curr_path = os.path.realpath(__file__)
+scenario_dir = os.path.join(Path(curr_path).parent.parent, 'scenario')
 
 """
 1. Create random grid graph (user defined size, obstacle ratio)
@@ -45,7 +49,7 @@ def save_scenarios(itr=10, size=32, obs=20, C=1, M=100, N=100):
 
         # 4
         datas = [instance, graph, agent_pos, tasks]
-        dir = '../scenarios/{}{}{}_{}_{}_{}/'.format(size, size, obs, C, M, N)
+        dir = scenario_dir+'/{}{}{}_{}_{}_{}/'.format(size, size, obs, C, M, N)
 
         try:
             if not os.path.exists(dir):
@@ -59,6 +63,7 @@ def save_scenarios(itr=10, size=32, obs=20, C=1, M=100, N=100):
 
 
 def load_scenarios(dir):
+    dir = scenario_dir+'/' + dir
     data_list = []
     with open(dir, 'rb') as f:
         while True:

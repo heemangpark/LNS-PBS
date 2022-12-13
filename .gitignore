@@ -6,3 +6,4 @@ scenarios/
 
 *.png
 EECBS/
+*.ipynb
