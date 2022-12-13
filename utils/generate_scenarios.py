@@ -9,7 +9,7 @@ from utils.vis_graph import vis_graph
 from pathlib import Path
 
 curr_path = os.path.realpath(__file__)
-scenario_dir = os.path.join(Path(curr_path).parent.parent, 'scenario')
+scenario_dir = os.path.join(Path(curr_path).parent.parent, 'scenarios')
 
 """
 1. Create random grid graph (user defined size, obstacle ratio)
