@@ -19,7 +19,7 @@ scenario_dir = os.path.join(Path(curr_path).parent.parent, 'scenarios')
 """
 
 
-def save_scenarios(itr=10, size=32, obs=20, C=1, M=100, N=100):
+def save_scenarios(itr=10, size=32, obs=20, C=1, M=10, N=10):
     """
     C: task length -> if 2, tau=(s, g)
     M: the number of agents
@@ -76,6 +76,5 @@ def load_scenarios(dir):
 
     return data_list
 
-
-if __name__ == "__main__":
-    save_scenarios()
+# if __name__ == "__main__":
+#     save_scenarios()
