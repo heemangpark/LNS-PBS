@@ -1,13 +1,10 @@
-import os
 import subprocess
 import time
-from pathlib import Path
 
 from LNS.hungarian import hungarian
 from LNS.regret import f_ijk, get_regret
 from LNS.shaw import removal
-from utils.env import load_env
-from utils.env import save_env
+from utils.env import save_env, load_env
 from utils.soc_ms import cost
 from utils.solver_util import save_map, save_scenario
 from utils.vis_graph import vis_init_assign, vis_assign
@@ -74,7 +71,7 @@ def EECBS():
     save_map(grid, scenario_name)
     save_scenario(agent_pos, total_tasks, scenario_name, grid.shape[0], grid.shape[1])
 
-    solver_path = os.path.join(Path(os.path.realpath(__file__)).parent, 'EECBS/')
+    solver_path = 'EECBS/'
     c = [solver_path + 'eecbs',
          "-m", solver_path + scenario_name + '.map',
          "-a", solver_path + scenario_name + '.scen',
@@ -88,5 +85,5 @@ def EECBS():
 
 
 if __name__ == "__main__":
-    LNS()
+    # LNS()
     EECBS()
