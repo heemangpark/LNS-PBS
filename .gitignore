@@ -2,9 +2,8 @@ __pycache__/
 .git/
 .idea/
 fig/
-EECBS/
-environment/
+scenarios/
 
-*.ipynb
 *.png
-*.txt
+EECBS/
+*.ipynb

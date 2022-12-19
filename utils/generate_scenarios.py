@@ -1,25 +1,24 @@
-import os
 import os.path
 import pickle
 import random
-from pathlib import Path
-
+import os
 import numpy as np
 
 from graph.generate_graph import gen_graph
 from utils.vis_graph import vis_graph
+from pathlib import Path
 
 curr_path = os.path.realpath(__file__)
-env_dir = os.path.join(Path(curr_path).parent.parent, 'environment')
+scenario_dir = os.path.join(Path(curr_path).parent.parent, 'scenarios')
 
 """
 1. Create random grid graph (user defined size, obstacle ratio)
 2. Initialize the predefined positions of the agents and tasks
-3. Save {grid, graph, initial agent positions, task} = environment
+3. Save grid, graph, initial agent positions, task
 """
 
 
-def save_env(size=32, obs=20, C=1, M=10, N=10):
+def save_scenarios(itr=10, size=32, obs=20, C=1, M=100, N=100):
     """
     C: task length -> if 2, tau=(s, g)
     M: the number of agents
@@ -30,7 +29,7 @@ def save_env(size=32, obs=20, C=1, M=10, N=10):
     instance, graph = gen_graph(size, obs)
     vis_graph(graph)
 
-    for it in range(10):
+    for it in range(itr):
 
         # 3
         empty_idx = list(range(len(graph)))
@@ -50,7 +49,7 @@ def save_env(size=32, obs=20, C=1, M=10, N=10):
 
         # 4
         datas = [instance, graph, agent_pos, tasks]
-        dir = env_dir + '/{}{}{}_{}_{}_{}/'.format(size, size, obs, C, M, N)
+        dir = scenario_dir+'/{}{}{}_{}_{}_{}/'.format(size, size, obs, C, M, N)
 
         try:
             if not os.path.exists(dir):
@@ -58,13 +57,13 @@ def save_env(size=32, obs=20, C=1, M=10, N=10):
         except OSError:
             print("Error: Cannot create the directory.")
 
-        with open(dir + 'environment_{}.pkl'.format(it + 1), 'wb') as f:
+        with open(dir + 'scenario_{}.pkl'.format(it + 1), 'wb') as f:
             for d in datas:
                 pickle.dump(d, f)
 
 
-def load_env(dir):
-    dir = env_dir + '/' + dir
+def load_scenarios(dir):
+    dir = scenario_dir+'/' + dir
     data_list = []
     with open(dir, 'rb') as f:
         while True:
@@ -75,3 +74,7 @@ def load_env(dir):
             data_list.append(data)
 
     return data_list
+
+
+if __name__ == "__main__":
+    save_scenarios()
