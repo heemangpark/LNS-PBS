@@ -10,8 +10,8 @@ from utils.vis_graph import vis_init_assign, vis_assign
 """
 Create random scenarios and load one of them
 """
-save_scenarios(C=1, M=100, N=100)
-scenario = load_scenarios('./scenarios/323220_1_100_100/scenario_1.pkl')
+save_scenarios(C=2, M=20, N=50)
+scenario = load_scenarios('323220_2_20_50/scenario_1.pkl')
 grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
 vis_init_assign(graph, agent_pos, total_tasks)
 
