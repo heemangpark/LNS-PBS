@@ -18,7 +18,7 @@ def vis_graph(graph):
     for i in range(len(graph)):
         pos[list(graph.nodes)[i]] = graph.nodes[list(graph.nodes)[i]]['loc']
     nx.draw(graph, pos=pos, with_labels=False, node_size=50)
-    plt.savefig(root_dir + 'graph.png')
+    plt.savefig(fig_dir + 'graph.png')
     plt.clf()
 
 
@@ -30,7 +30,7 @@ def vis_init(graph, agents, tasks):
     for j in range(len(tasks)):
         nx.draw(graph, pos=pos, nodelist=[tuple(t) for t in tasks[j]], node_color='b', node_size=100)
 
-    plt.savefig(root_dir + 'init.png')
+    plt.savefig(fig_dir, 'init.png')
     plt.clf()
 
 
@@ -48,5 +48,5 @@ def vis_assign(graph, agents, tasks, itr):
         nx.draw(graph, pos=pos, nodelist=nodelist, node_size=100, node_shape='X',
                 node_color=['red', 'orange', 'green', 'blue', 'purple'][a])
 
-    plt.savefig(root_dir + 'assign_{}.png'.format(itr))
+    plt.savefig(fig_dir, 'assign_{}.png'.format(itr))
     plt.clf()
