@@ -5,5 +5,6 @@ EECBS/
 fig/
 scenarios/
 
-*.png
 *.ipynb
+*.png
+*.txt

@@ -3,22 +3,30 @@ import time
 from LNS.hungarian import hungarian
 from LNS.regret import f_ijk, get_regret
 from LNS.shaw import removal
-from utils.generate_scenarios import load_scenarios
+from utils.generate_scenarios import save_scenarios, load_scenarios
 from utils.soc_ms import cost
-from utils.vis_graph import vis_init
+from utils.vis_graph import vis_init_assign, vis_assign
 
+"""
+Create random scenarios and load one of them
+"""
+save_scenarios(C=1, M=100, N=100)
 scenario = load_scenarios('./scenarios/323220_1_100_100/scenario_1.pkl')
 grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
-vis_init(graph, agent_pos, total_tasks)
+vis_init_assign(graph, agent_pos, total_tasks)
 
-"""First step: Hungarian Assignment"""
+"""
+1st step: Hungarian Assignment
+"""
 h_time = time.time()
 task_idx, tasks = hungarian(graph, agent_pos, total_tasks)
 print('INIT || SOC: {:.4f} / MAKESPAN: {:.4f} / TIMECOST: {:.4f}'
       .format(cost(tasks, graph)[0], cost(tasks, graph)[1], time.time() - h_time))
-# vis_assign(graph, agent_pos, tasks, 'hungarian')
+vis_assign(graph, agent_pos, tasks, 'hungarian')
 
-"""Second step: LNS"""
+"""
+2nd step: Large Neighborhood Search (iteratively)
+"""
 for itr in range(10):
     lns_time = time.time()
 
@@ -42,4 +50,4 @@ for itr in range(10):
 
     print('{}_Solution || SOC: {:.4f} / MAKESPAN: {:.4f} / TIMECOST: {:.4f}'
           .format(itr + 1, cost(tasks, graph)[0], cost(tasks, graph)[1], time.time() - lns_time))
-    # vis_assign(graph, agent_pos, tasks, itr + 1)
+    vis_assign(graph, agent_pos, tasks, itr + 1)
