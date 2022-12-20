@@ -23,7 +23,7 @@ def vis_graph(graph):
     plt.clf()
 
 
-def vis_init_assign(graph, agents, tasks):
+def vis_dist(graph, agents, tasks):
     pos = dict()
     for i in range(len(graph)):
         pos[list(graph.nodes)[i]] = graph.nodes[list(graph.nodes)[i]]['loc']
@@ -36,25 +36,24 @@ def vis_init_assign(graph, agents, tasks):
             os.makedirs(fig_dir)
     except OSError:
         print("Error: Cannot create the directory.")
-    plt.savefig(fig_dir + '/init_assign.png')
+    plt.savefig(fig_dir + '/distribution.png')
     plt.clf()
 
 
-def vis_assign(graph, agents, tasks, itr):
+def vis_ta(graph, agents, tasks, itr):
     pos = dict()
     for i in range(len(graph)):
         pos[list(graph.nodes)[i]] = graph.nodes[list(graph.nodes)[i]]['loc']
-    for a in tasks:
-        nodelist = [tuple(agents[a])]
-        nx.draw(graph, pos=pos, nodelist=nodelist, node_size=100)
-        # nx.draw(graph, pos=pos, nodelist=nodelist, node_size=100,
-        #         node_color=['red', 'orange', 'green', 'blue', 'purple'][a])
+    colors = [i / len(agents) for i in range(len(agents))]
+    for a, _ in enumerate(agents):
+        nodelist = list()
         for b in range(len(tasks[a])):
             for c in tasks[a][b].values():
                 nodelist += [tuple(d) for d in c]
-        nx.draw(graph, pos=pos, nodelist=nodelist, node_size=100, node_shape='X')
-        # nx.draw(graph, pos=pos, nodelist=nodelist, node_size=100, node_shape='X',
-        #         node_color=['red', 'orange', 'green', 'blue', 'purple'][a])
+        nx.draw(graph, pos=pos, nodelist=[nodelist[0]], node_size=100,
+                node_color=[colors[a]], cmap=plt.cm.get_cmap('rainbow'))
+        nx.draw(graph, pos=pos, nodelist=nodelist[1:], node_size=100, node_shape='X',
+                node_color=[colors[a]] * (len(nodelist) - 1), cmap=plt.cm.get_cmap('rainbow'))
 
     try:
         if not os.path.exists(fig_dir):

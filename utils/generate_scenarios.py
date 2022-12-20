@@ -28,7 +28,7 @@ def save_scenarios(itr=10, size=32, obs=20, C=1, M=10, N=10):
 
     # 1
     instance, graph = gen_graph(size, obs)
-    vis_graph(graph)
+    # vis_graph(graph)
 
     for it in range(itr):
 

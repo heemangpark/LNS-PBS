@@ -2,9 +2,11 @@ import subprocess
 
 from utils.generate_scenarios import load_scenarios
 from utils.solver_util import save_map, save_scenario
+from utils.vis_graph import vis_dist
 
 scenario = load_scenarios('323220_1_20_50/scenario_1.pkl')
 grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
+vis_dist(graph, agent_pos, total_tasks)
 
 scenario_name = 'test'
 save_map(grid, scenario_name)
@@ -18,7 +20,7 @@ c = [solver_path + "eecbs",
      "-a", solver_path + scenario_name + '.scen',
      "-o", solver_path + "test.csv",
      "--outputPaths = EECBS/paths.txt",
-     "-k", "{}".format(M),
+     "-k", "{}".format(20),
      "-t", "60",
      "--suboptimality = 1.2"]
 

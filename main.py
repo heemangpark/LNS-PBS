@@ -5,15 +5,15 @@ from LNS.regret import f_ijk, get_regret
 from LNS.shaw import removal
 from utils.generate_scenarios import save_scenarios, load_scenarios
 from utils.soc_ms import cost
-from utils.vis_graph import vis_init_assign, vis_assign
+from utils.vis_graph import vis_dist, vis_ta
 
 """
 Create random scenarios and load one of them
 """
-save_scenarios(C=2, M=20, N=50)
-scenario = load_scenarios('323220_2_20_50/scenario_1.pkl')
+save_scenarios(C=1, M=5, N=10)
+scenario = load_scenarios('323220_1_5_10/scenario_1.pkl')
 grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
-vis_init_assign(graph, agent_pos, total_tasks)
+# vis_dist(graph, agent_pos, total_tasks)
 
 """
 1st step: Hungarian Assignment
@@ -22,12 +22,12 @@ h_time = time.time()
 task_idx, tasks = hungarian(graph, agent_pos, total_tasks)
 print('INIT || SOC: {:.4f} / MAKESPAN: {:.4f} / TIMECOST: {:.4f}'
       .format(cost(tasks, graph)[0], cost(tasks, graph)[1], time.time() - h_time))
-vis_assign(graph, agent_pos, tasks, 'hungarian')
+# vis_ta(graph, agent_pos, tasks, 'hungarian')
 
 """
 2nd step: Large Neighborhood Search (iteratively)
 """
-for itr in range(10):
+for itr in range(5):
     lns_time = time.time()
 
     # Destroy
@@ -39,7 +39,8 @@ for itr in range(10):
 
     # Reconstruct
     while len(removal_idx) != 0:
-        f = f_ijk(removal_idx, tasks, total_tasks, graph)
+        "time consuming"
+        f = f_ijk(tasks, agent_pos, removal_idx, total_tasks, graph)
         regret = get_regret(f)
         regret = dict(sorted(regret.items(), key=lambda x: x[1][0], reverse=True))
         re_ins = list(regret.keys())[0]
@@ -50,4 +51,5 @@ for itr in range(10):
 
     print('{}_Solution || SOC: {:.4f} / MAKESPAN: {:.4f} / TIMECOST: {:.4f}'
           .format(itr + 1, cost(tasks, graph)[0], cost(tasks, graph)[1], time.time() - lns_time))
-    vis_assign(graph, agent_pos, tasks, itr + 1)
+    print(agent_pos, tasks)
+    # vis_ta(graph, agent_pos, tasks, itr + 1)
