@@ -19,6 +19,8 @@ def vis_graph(graph):
             os.makedirs(fig_dir)
     except OSError:
         print("Error: Cannot create the directory.")
+
+    plt.title("graph structure")
     plt.savefig(fig_dir + '/graph.png')
     plt.clf()
 
@@ -36,29 +38,34 @@ def vis_dist(graph, agents, tasks):
             os.makedirs(fig_dir)
     except OSError:
         print("Error: Cannot create the directory.")
+
+    plt.title("distribution of agents and tasks")
     plt.savefig(fig_dir + '/distribution.png')
     plt.clf()
 
 
-def vis_ta(graph, agents, tasks, itr):
+def vis_ta(graph, agents, tasks, itr, soc):
     pos = dict()
     for i in range(len(graph)):
         pos[list(graph.nodes)[i]] = graph.nodes[list(graph.nodes)[i]]['loc']
+    task_nodes = list()
     colors = [i / len(agents) for i in range(len(agents))]
-    for a, _ in enumerate(agents):
-        nodelist = list()
-        for b in range(len(tasks[a])):
-            for c in tasks[a][b].values():
-                nodelist += [tuple(d) for d in c]
-        nx.draw(graph, pos=pos, nodelist=[nodelist[0]], node_size=100,
-                node_color=[colors[a]], cmap=plt.cm.get_cmap('rainbow'))
-        nx.draw(graph, pos=pos, nodelist=nodelist[1:], node_size=100, node_shape='X',
-                node_color=[colors[a]] * (len(nodelist) - 1), cmap=plt.cm.get_cmap('rainbow'))
+    t_colors = list()
+    for c, t in enumerate(tasks.values()):
+        t_colors += [colors[c] for _ in range(len(t))]
+        for _t in t:
+            task_nodes.append(tuple(list(_t.values())[0][0]))
+    nx.draw(graph, pos=pos, nodelist=[tuple(a) for a in agents], node_size=100, node_color=colors,
+            cmap=plt.cm.get_cmap('rainbow'))
+    nx.draw(graph, pos=pos, nodelist=task_nodes, node_size=100, node_shape='X', node_color=t_colors,
+            cmap=plt.cm.get_cmap('rainbow'))
 
     try:
         if not os.path.exists(fig_dir):
             os.makedirs(fig_dir)
     except OSError:
         print("Error: Cannot create the directory.")
-    plt.savefig(fig_dir + '/assign_{}.png'.format(itr))
+
+    plt.title("sum of cost: {:.4f}".format(soc))
+    plt.savefig(fig_dir + '/ta_{}.png'.format(itr))
     plt.clf()
