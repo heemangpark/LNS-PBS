@@ -2,7 +2,9 @@ __pycache__/
 .git/
 .idea/
 EECBS/
+exp/
 fig/
+RHCR/
 scenarios/
 
 *.ipynb
