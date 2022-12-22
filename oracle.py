@@ -32,6 +32,13 @@ for idx in list(range(1, 1001)):
             to_insert = {re_ins: total_tasks[re_ins]}
             tasks[re_a].insert(re_j, to_insert)
 
+    print(idx)
+    with open('data/1010grid_{}'.format(idx), 'wb') as f:  # grid
+        pickle.dump(grid, f)
+
+    with open('data/1010graph_{}'.format(idx), 'wb') as f:  # graph
+        pickle.dump(graph, f)
+
     with open('data/1010AP_{}'.format(idx), 'wb') as f:  # agent position
         pickle.dump(agent_pos, f)
 
