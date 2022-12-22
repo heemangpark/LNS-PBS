@@ -2,7 +2,7 @@ import subprocess
 import os
 
 from utils.generate_scenarios import load_scenarios, save_scenarios
-from utils.solver_util import save_map, save_scenario
+from utils.solver_util import save_map, save_scenario, read_trajectory
 from utils.vis_graph import vis_dist
 
 M, N = 50, 50
@@ -31,4 +31,6 @@ c = [solver_path + "eecbs",
 
 subprocess.run(c)
 
-f = open(solver_path + scenario_name + "_paths.txt", 'r')
+agent_traj = read_trajectory(solver_path + scenario_name + "_paths.txt")
+
+print()
