@@ -1,6 +1,9 @@
 __pycache__/
 .git/
 .idea/
+
+# Solver-related
+RHCR/
 EECBS/
 fig/
 scenarios/
