@@ -28,7 +28,10 @@ vis_ta(graph, agent_pos, tasks, 'HA', soc)
 """
 2nd step: Large Neighborhood Search (iteratively)
 """
-for itr in range(5):
+max_t = time.time() + 10  # time limit: 60s
+itr = 0
+
+while True:
     lns_time = time.time()
 
     # Destroy
@@ -37,7 +40,6 @@ for itr in range(5):
         for r in removal_idx:
             if {r: total_tasks[r]} in t:
                 tasks[i].remove({r: total_tasks[r]})
-
     # Reconstruct
     while len(removal_idx) != 0:
         "time consuming"
@@ -51,6 +53,10 @@ for itr in range(5):
         tasks[re_a].insert(re_j, to_insert)
 
     lns_time = time.time() - lns_time
+    if time.time() > max_t:
+        break
+
+    itr += 1
     soc, ms = cost(tasks, graph)
-    print('{}_Solution || SOC: {:.4f} / MAKESPAN: {:.4f} / TIMECOST: {:.4f}'.format(itr + 1, soc, ms, lns_time))
-    vis_ta(graph, agent_pos, tasks, itr + 1, soc)
+    print('{}_Solution || SOC: {:.4f} / MAKESPAN: {:.4f} / TIMECOST: {:.4f}'.format(itr, soc, ms, lns_time))
+    vis_ta(graph, agent_pos, tasks, itr, soc)

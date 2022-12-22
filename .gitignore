@@ -5,7 +5,9 @@ __pycache__/
 # Solver-related
 RHCR/
 EECBS/
+exp/
 fig/
+RHCR/
 scenarios/
 
 *.ipynb
