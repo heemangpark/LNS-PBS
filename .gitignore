@@ -7,7 +7,7 @@ RHCR/
 EECBS/
 exp/
 fig/
-RHCR/
+data/
 scenarios/
 
 *.ipynb

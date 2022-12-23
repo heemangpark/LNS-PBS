@@ -49,16 +49,30 @@ def vis_ta(graph, agents, tasks, itr, soc):
     for i in range(len(graph)):
         pos[list(graph.nodes)[i]] = graph.nodes[list(graph.nodes)[i]]['loc']
     task_nodes = list()
-    colors = [i / len(agents) for i in range(len(agents))]
+    colors = [plt.cm.get_cmap('rainbow')(i / len(agents)) for i in range(len(agents))]
     t_colors = list()
+    labeldict = dict()
+    for i, a in enumerate(agents):
+        labeldict[tuple(a)] = i
+
+    for ag_idx, task in tasks.items():
+        for t in task:
+            for _t in t.values():
+                labeldict[tuple(_t[0])] = ag_idx
+
     for c, t in enumerate(tasks.values()):
         t_colors += [colors[c] for _ in range(len(t))]
         for _t in t:
             task_nodes.append(tuple(list(_t.values())[0][0]))
-    nx.draw(graph, pos=pos, nodelist=[tuple(a) for a in agents], node_size=100, node_color=colors,
-            cmap=plt.cm.get_cmap('rainbow'))
-    nx.draw(graph, pos=pos, nodelist=task_nodes, node_size=100, node_shape='X', node_color=t_colors,
-            cmap=plt.cm.get_cmap('rainbow'))
+    nx.draw(graph, pos=pos, nodelist=[tuple(a) for a in agents], node_size=100,
+            node_color=colors,
+            # cmap=plt.cm.get_cmap('rainbow')
+            )
+    nx.draw(graph, pos=pos, nodelist=task_nodes, node_size=100, node_shape='X',
+            node_color=t_colors,
+            # cmap=plt.cm.get_cmap('rainbow')
+            )
+    nx.draw_networkx_labels(graph, pos, labeldict)
 
     try:
         if not os.path.exists(fig_dir):
