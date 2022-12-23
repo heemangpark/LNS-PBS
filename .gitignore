@@ -1,14 +1,17 @@
 __pycache__/
 .git/
 .idea/
+.ipynb_checkpoints/
 
-# Solver-related
-RHCR/
+# datasets
+data/
+fig/
+scenarios/
+
+# MAPF solvers
 EECBS/
 exp/
-fig/
-data/
-scenarios/
+RHCR/
 
 *.ipynb
 *.png

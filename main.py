@@ -11,7 +11,7 @@ from utils.vis_graph import vis_dist, vis_ta
 Create random scenarios and load one of them
 """
 # save_scenarios(C=1, M=20, N=50)
-scenario = load_scenarios('323220_1_20_50/scenario_1.pkl')
+scenario = load_scenarios('323220_1_10_10/scenario_1.pkl')
 grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
 vis_dist(graph, agent_pos, total_tasks)
 
@@ -21,14 +21,14 @@ vis_dist(graph, agent_pos, total_tasks)
 h_time = time.time()
 task_idx, tasks = hungarian(graph, agent_pos, total_tasks)
 h_time = time.time() - h_time
-soc, ms = cost(tasks, graph)
+soc, ms = cost(agent_pos, tasks, graph)
 print('INIT || SOC: {:.4f} / MAKESPAN: {:.4f} / TIMECOST: {:.4f}'.format(soc, ms, h_time))
 vis_ta(graph, agent_pos, tasks, 'HA', soc)
 
 """
 2nd step: Large Neighborhood Search (iteratively)
 """
-max_t = time.time() + 10  # time limit: 60s
+max_t = time.time() + 5  # time limit: 10s
 itr = 0
 
 while True:
@@ -57,6 +57,6 @@ while True:
         break
 
     itr += 1
-    soc, ms = cost(tasks, graph)
+    soc, ms = cost(agent_pos, tasks, graph)
     print('{}_Solution || SOC: {:.4f} / MAKESPAN: {:.4f} / TIMECOST: {:.4f}'.format(itr, soc, ms, lns_time))
     vis_ta(graph, agent_pos, tasks, itr, soc)

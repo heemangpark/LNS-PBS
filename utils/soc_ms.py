@@ -1,11 +1,12 @@
 from utils.astar import graph_astar
 
 
-def cost(solution, graph):
+def cost(agent_pos, solution, graph):
     agent_cost_list = list()
-    for i in solution.keys():
+    for i in solution:
         path = list()
-        agent_cost = 0
+        agent_cost = 0 if len(solution[i]) == 0 else graph_astar(graph, agent_pos[i],
+                                                                 list(solution[i][0].values())[0][0])[1]
         for a in solution[i]:
             for b in a.values():
                 path += b
