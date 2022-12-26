@@ -41,10 +41,11 @@ def tool(instance, rand_coord=False):
 
     xs = np.array(list(rand_x) * n)
     ys = rand_y[::-1].repeat(m)
+    coords = np.stack([xs, ys], -1)
 
     for id, n_id in enumerate(g.nodes()):
-        g.nodes[n_id]['loc'] = np.stack([xs, ys], -1)[id].tolist()
-        g.nodes[n_id]['type'] = int(instance.reshape(-1)[id])
+        g.nodes[n_id]['loc'] = coords[id].tolist()
+        # g.nodes[n_id]['type'] = int(instance.reshape(-1)[id])
 
     for r, c in zip(instance.nonzero()[0], instance.nonzero()[1]):
         g.remove_node((r, c))
