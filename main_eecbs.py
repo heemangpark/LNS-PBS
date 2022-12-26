@@ -2,14 +2,15 @@ import os
 import subprocess
 
 from nn.agent import Agent
+from nn.ag_util import embed_traj
 from utils.generate_scenarios import load_scenarios, save_scenarios
 from utils.solver_util import save_map, save_scenario, read_trajectory
 from utils.vis_graph import vis_dist
 
 solver_path = "EECBS/"
 M, N = 10, 10
-if not os.path.exists('scenarios/323220_1_{}_{}/'.format(M, N)):
-    save_scenarios(size=32, M=M, N=N)
+# if not os.path.exists('scenarios/323220_1_{}_{}/'.format(M, N)):
+save_scenarios(size=32, M=M, N=N)
 
 scenario = load_scenarios('323220_1_{}_{}/scenario_1.pkl'.format(M, N))
 grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
@@ -37,9 +38,10 @@ for i in range(10):
          "-k", "{}".format(M), "-t", "60", "--suboptimality=1.2"]
     subprocess.run(c)
     agent_traj = read_trajectory(solver_path + scenario_name + "_paths.txt")
-    costs = [len(t) for t in agent_traj]
 
-    total_tasks_after = ag(graph, agent_pos, total_tasks_bef)
+    di_dgl_g = embed_traj(graph, agent_pos, total_tasks_bef, agent_traj)
+    total_tasks_after = ag(di_dgl_g)
     total_tasks_bef = total_tasks_after
 
+    costs = [len(t) for t in agent_traj]
     print("cost:{}".format(sum(costs)))
