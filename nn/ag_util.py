@@ -14,7 +14,7 @@ def process_graph(nx_g):
 
 
 def embed_traj(nx_g, agent_pos, tasks, agent_traj):
-    di_nx_g = nx.DiGraph(nx_g)
+    di_nx_g = nx.DiGraph(nx_g) # default networkx graph is undirected
     # set default edge attribute
     nx.set_edge_attributes(di_nx_g, 0, 'traj')
     nx.set_node_attributes(di_nx_g, 0, 'type')
@@ -22,6 +22,8 @@ def embed_traj(nx_g, agent_pos, tasks, agent_traj):
     # set visited traj edge attribute
     for t in agent_traj:
         for _f, _t in zip(t[:-1], t[1:]):
+            # TODO: 'hold' action
+            if _f == _t: continue
             di_nx_g.edges[tuple(_f), tuple(_t)]['traj'] = 1
 
     for p in agent_pos:
