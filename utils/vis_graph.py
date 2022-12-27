@@ -20,7 +20,6 @@ def vis_graph(graph):
     except OSError:
         print("Error: Cannot create the directory.")
 
-    plt.title("graph structure")
     plt.savefig(fig_dir + '/graph.png')
     plt.clf()
 
@@ -39,12 +38,11 @@ def vis_dist(graph, agents, tasks):
     except OSError:
         print("Error: Cannot create the directory.")
 
-    plt.title("distribution of agents and tasks")
     plt.savefig(fig_dir + '/distribution.png')
     plt.clf()
 
 
-def vis_ta(graph, agents, tasks, itr, soc):
+def vis_ta(graph, agents, tasks, itr):
     pos = dict()
     for i in range(len(graph)):
         pos[list(graph.nodes)[i]] = graph.nodes[list(graph.nodes)[i]]['loc']
@@ -76,6 +74,5 @@ def vis_ta(graph, agents, tasks, itr, soc):
     except OSError:
         print("Error: Cannot create the directory.")
 
-    plt.title("sum of cost: {:.4f}".format(soc))
     plt.savefig(fig_dir + '/ta_{}.png'.format(itr))
     plt.clf()

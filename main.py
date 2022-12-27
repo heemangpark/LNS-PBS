@@ -23,26 +23,25 @@ task_idx, tasks = hungarian(graph, agent_pos, total_tasks)
 h_time = time.time() - h_time
 soc, ms = cost(agent_pos, tasks, graph)
 print('INIT || SOC: {:.4f} / MAKESPAN: {:.4f} / TIMECOST: {:.4f}'.format(soc, ms, h_time))
-vis_ta(graph, agent_pos, tasks, 'HA', soc)
+vis_ta(graph, agent_pos, tasks, 'HA')
 
 """
 2nd step: Large Neighborhood Search (iteratively)
 """
-max_t = time.time() + 5  # time limit: 10s
+max_t = time.time() + 10  # time limit: 10s
 itr = 0
 
 while True:
     lns_time = time.time()
 
     # Destroy
-    removal_idx = removal(task_idx, total_tasks, graph)
+    removal_idx = removal(task_idx, total_tasks, graph, N=2)
     for i, t in enumerate(tasks.values()):
         for r in removal_idx:
             if {r: total_tasks[r]} in t:
                 tasks[i].remove({r: total_tasks[r]})
     # Reconstruct
     while len(removal_idx) != 0:
-        "time consuming"
         f = f_ijk(tasks, agent_pos, removal_idx, total_tasks, graph)
         regret = get_regret(f)
         regret = dict(sorted(regret.items(), key=lambda x: x[1][0], reverse=True))
@@ -59,4 +58,6 @@ while True:
     itr += 1
     soc, ms = cost(agent_pos, tasks, graph)
     print('{}_Solution || SOC: {:.4f} / MAKESPAN: {:.4f} / TIMECOST: {:.4f}'.format(itr, soc, ms, lns_time))
-    vis_ta(graph, agent_pos, tasks, itr, soc)
+    vis_ta(graph, agent_pos, tasks, itr)
+
+# TODO [1] removal parameter N test / [2] time consuming regret search
