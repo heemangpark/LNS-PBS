@@ -1,5 +1,6 @@
 import dgl
 import networkx as nx
+import torch
 
 AG_type = 1
 TASK_type = 2
@@ -35,8 +36,12 @@ def convert_dgl(nx_g, agent_pos, tasks, agent_traj):
 
     di_dgl_g = dgl.from_networkx(di_nx_g, node_attrs=['loc', 'type'], edge_attrs=['traj'])
     node_idx_dict = dict()
+    coord_x = []
+    coord_y = []
     for i, node in enumerate(di_nx_g.nodes()):
         node_idx_dict[tuple(node)] = i
+        coord_x.append(node[0])
+        coord_y.append(node[1])
 
     ag_node_indices = []
     for a in agent_pos:
@@ -46,6 +51,9 @@ def convert_dgl(nx_g, agent_pos, tasks, agent_traj):
     assert len(tasks[0]) == 1, "task size > 1 not supported yet"
     for task in tasks:
         task_node_indices.append(node_idx_dict[tuple(task[0])])
+
+    di_dgl_g.ndata['x'] = torch.tensor(coord_x)
+    di_dgl_g.ndata['y'] = torch.tensor(coord_y)
 
     return di_dgl_g, ag_node_indices, task_node_indices
 
