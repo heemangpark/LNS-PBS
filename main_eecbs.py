@@ -2,7 +2,7 @@ import os
 import subprocess
 
 from nn.agent import Agent
-from nn.ag_util import embed_traj
+from nn.ag_util import convert_dgl
 from utils.generate_scenarios import load_scenarios, save_scenarios
 from utils.solver_util import save_map, save_scenario, read_trajectory
 from utils.vis_graph import vis_dist
@@ -39,7 +39,9 @@ for i in range(10):
     subprocess.run(c)
     agent_traj = read_trajectory(solver_path + scenario_name + "_paths.txt")
 
-    di_dgl_g = embed_traj(graph, agent_pos, total_tasks_bef, agent_traj)
+    # Agent position 을 index 로 저장
+
+    di_dgl_g, ag_node_indices, task_node_indices  = convert_dgl(graph, agent_pos, total_tasks_bef, agent_traj)
     total_tasks_after = ag(di_dgl_g, agent_pos)
     total_tasks_bef = total_tasks_after
 

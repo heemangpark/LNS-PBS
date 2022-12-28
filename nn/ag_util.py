@@ -13,8 +13,8 @@ def process_graph(nx_g):
     return dgl_g
 
 
-def embed_traj(nx_g, agent_pos, tasks, agent_traj):
-    di_nx_g = nx.DiGraph(nx_g) # default networkx graph is undirected
+def convert_dgl(nx_g, agent_pos, tasks, agent_traj):
+    di_nx_g = nx.DiGraph(nx_g)  # default networkx graph is undirected
     # set default edge attribute
     nx.set_edge_attributes(di_nx_g, 0, 'traj')
     nx.set_node_attributes(di_nx_g, 0, 'type')
@@ -34,4 +34,27 @@ def embed_traj(nx_g, agent_pos, tasks, agent_traj):
             di_nx_g.nodes[tuple(_t)]['type'] = TASK_type
 
     di_dgl_g = dgl.from_networkx(di_nx_g, node_attrs=['loc', 'type'], edge_attrs=['traj'])
-    return di_dgl_g
+    node_idx_dict = dict()
+    for i, node in enumerate(di_nx_g.nodes()):
+        node_idx_dict[tuple(node)] = i
+
+    ag_node_indices = []
+    for a in agent_pos:
+        ag_node_indices.append(node_idx_dict[tuple(a)])
+
+    task_node_indices = []
+    assert len(tasks[0]) == 1, "task size > 1 not supported yet"
+    for task in tasks:
+        task_node_indices.append(node_idx_dict[tuple(task[0])])
+
+    return di_dgl_g, ag_node_indices, task_node_indices
+
+
+if __name__ == '__main__':
+    from utils.generate_scenarios import load_scenarios
+
+    M, N = 10, 10
+    scenario = load_scenarios('323220_1_{}_{}/scenario_1.pkl'.format(M, N))
+    grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
+
+    di_dgl_g = convert_dgl(graph, agent_pos, total_tasks, [])
