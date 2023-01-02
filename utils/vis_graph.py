@@ -43,6 +43,7 @@ def vis_dist(graph, agents, tasks):
 
 
 def vis_ta(graph, agents, tasks, itr):
+    fig, ax = plt.subplots()
     pos = dict()
     for i in range(len(graph)):
         pos[list(graph.nodes)[i]] = graph.nodes[list(graph.nodes)[i]]['loc']
@@ -52,6 +53,12 @@ def vis_ta(graph, agents, tasks, itr):
     labeldict = dict()
     for i, a in enumerate(agents):
         labeldict[tuple(a)] = i
+
+    if type(tasks) == list:
+        temp_tasks = dict()
+        for i, t in enumerate(tasks):
+            temp_tasks[i] = [{0:t}]
+        tasks = temp_tasks
 
     for ag_idx, task in tasks.items():
         for t in task:
@@ -74,5 +81,6 @@ def vis_ta(graph, agents, tasks, itr):
     except OSError:
         print("Error: Cannot create the directory.")
 
+    ax.axis('equal')
     plt.savefig(fig_dir + '/ta_{}.png'.format(itr))
     plt.clf()
