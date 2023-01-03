@@ -4,13 +4,34 @@ import dgl
 
 
 class GNN(nn.Module):
-    def __init__(self, node_dim, embedding_dim):
+    def __init__(self, in_dim, out_dim, embedding_dim, n_layers):
         super(GNN, self).__init__()
-        self.node_embedding = nn.Linear(embedding_dim + node_dim, embedding_dim)
-        self.edge_embedding = nn.Linear(node_dim * 2 + 1, embedding_dim)
+        _ins = [in_dim] + [embedding_dim] * (n_layers - 1)
+        _outs = [embedding_dim] * (n_layers - 1) + [out_dim]
 
-    def forward(self, g: dgl.DGLGraph):
-        nf = torch.eye(3)[g.ndata['type']]
+        layers = []
+        for _i, _o in zip(_ins, _outs):
+            layers.append(GNNLayer(_i, _o))
+        self.layers = nn.ModuleList(layers)
+
+    def forward(self, g, nf=None):
+        if nf is None:
+            nf = torch.eye(3)[g.ndata['type']]
+
+        for l in self.layers:
+            nf = l(g, nf)
+        return nf
+
+
+class GNNLayer(nn.Module):
+    def __init__(self, in_dim, out_dim):
+        super(GNNLayer, self).__init__()
+        self.node_embedding = nn.Sequential(nn.Linear(out_dim + in_dim, out_dim),
+                                            nn.LeakyReLU())
+        self.edge_embedding = nn.Sequential(nn.Linear(in_dim * 2 + 1, out_dim),
+                                            nn.LeakyReLU())
+
+    def forward(self, g: dgl.DGLGraph, nf):
         g.ndata['nf'] = nf
         g.update_all(message_func=self.message_func,
                      reduce_func=self.reduce_func,
