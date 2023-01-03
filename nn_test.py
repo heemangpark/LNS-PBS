@@ -102,10 +102,11 @@ while not all(task_finished):
     # Replay memory 에 transition 저장. Agent position 을 graph 의 node 형태로
     # NOTE: solver out cost == 아래의 cost - M
     # costs = [len(t) for t in agent_traj]
-    print("itr:{}, cost:{}".format(itr, sum_costs))
+    print("itr:{}, cum_cost:{}, estimated_to_go:{}".format(itr, episode_timestep, sum_costs))
     # TODO
     agent_traj = []
-    ag.push(di_dgl_g, ag_node_indices, task_node_indices, )
+    terminated = all(task_finished)
+    ag.push(di_dgl_g, ag_node_indices, task_node_indices, next_t, terminated)
 
     di_dgl_g, ag_node_indices, _ = convert_dgl(graph, agent_pos, total_tasks, agent_traj)
 
