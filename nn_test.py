@@ -28,6 +28,7 @@ TODO total_tasks format
 태스크 전체 (순서대로) 쭉 나열된 일종의 task 집합 -> 'agent to task' 할당 집합으로 바꿔야 함 (main.py에서 tasks에 해당)
 """
 itr = 0
+episode_timestep = 0
 
 agent_traj = []
 # `task_finished` defined for each episode
@@ -93,6 +94,7 @@ while not all(task_finished):
     next_t = np.min([len(t) for t in agent_traj])
     finished_task_idx = joint_action[finished_ag_idx]
     task_finished[finished_task_idx] = True
+    episode_timestep += next_t
 
     # overwrite output
     agent_pos = [traj[next_t - 1] for traj in agent_traj]
@@ -103,6 +105,7 @@ while not all(task_finished):
     print("itr:{}, cost:{}".format(itr, sum_costs))
     # TODO
     agent_traj = []
+    ag.push(di_dgl_g, ag_node_indices, task_node_indices, )
 
     di_dgl_g, ag_node_indices, _ = convert_dgl(graph, agent_pos, total_tasks, agent_traj)
 
