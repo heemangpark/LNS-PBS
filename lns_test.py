@@ -6,7 +6,7 @@ from LNS.hungarian import hungarian
 from LNS.regret import f_ijk, get_regret
 from LNS.shaw import removal
 from utils.generate_scenarios import load_scenarios
-from utils.soc_ms import cost
+from utils.soc_ms import costa
 
 
 def test_lns(lns_step, exp_repeat, N):
