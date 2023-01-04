@@ -1,10 +1,14 @@
 import torch
 import torch.nn as nn
 import dgl
+import dgl.function as fn
+
+AG_type = 1
+TASK_type = 2
 
 
 class GNN(nn.Module):
-    def __init__(self, in_dim, out_dim, embedding_dim, n_layers):
+    def __init__(self, in_dim, out_dim, embedding_dim, n_layers, residual=False):
         super(GNN, self).__init__()
         _ins = [in_dim] + [embedding_dim] * (n_layers - 1)
         _outs = [embedding_dim] * (n_layers - 1) + [out_dim]
@@ -14,12 +18,16 @@ class GNN(nn.Module):
             layers.append(GNNLayer(_i, _o))
         self.layers = nn.ModuleList(layers)
 
-    def forward(self, g, nf=None):
-        if nf is None:
-            nf = torch.eye(3)[g.ndata['type']]
+        self.residual = residual
 
-        for l in self.layers:
-            nf = l(g, nf)
+    def forward(self, g, nf):
+        nf_prev = nf
+        for layer in self.layers:
+            nf = layer(g, nf_prev)
+            if self.residual:
+                nf_prev = nf + nf_prev
+            else:
+                nf_prev = nf
         return nf
 
 
@@ -54,3 +62,26 @@ class GNNLayer(nn.Module):
         in_feat = torch.concat([nodes.data['nf'], nodes.data['red_msg']], -1)
         out_feat = self.node_embedding(in_feat)
         return {'out_nf': out_feat}
+
+
+class Bipartite:
+    def get_policy(self, g: dgl.DGLGraph, nf):
+        g.ndata['nf'] = nf
+
+        # pull from task node idx to agent node idx
+        ag_node_indices = g.filter_nodes(ag_node_func)
+        task_node_indices = g.filter_nodes(task_node_func)
+
+        ag_nfs = g.nodes[ag_node_indices].data['nf']
+        task_nfs = g.nodes[task_node_indices].data['nf']
+        ###### WIP
+
+    # def
+
+
+def ag_node_func(nodes):
+    return (nodes.data['type'] == AG_type)  # .squeeze(1)
+
+
+def task_node_func(nodes):
+    return (nodes.data['type'] == TASK_type)  # .squeeze(1)

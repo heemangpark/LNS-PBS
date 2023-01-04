@@ -14,7 +14,7 @@ def process_graph(nx_g):
     return dgl_g
 
 
-def convert_dgl(nx_g, agent_pos, tasks, agent_traj):
+def convert_dgl(nx_g, agent_pos, tasks, agent_traj, task_finished=[]):
     di_nx_g = nx.DiGraph(nx_g)  # default networkx graph is undirected
     # set default edge attribute
     nx.set_edge_attributes(di_nx_g, 0, 'traj')
@@ -30,9 +30,10 @@ def convert_dgl(nx_g, agent_pos, tasks, agent_traj):
     for p in agent_pos:
         di_nx_g.nodes[tuple(p)]['type'] = AG_type
 
-    for t in tasks:
+    for finished, t in zip(task_finished, tasks):
         for _t in t:
-            di_nx_g.nodes[tuple(_t)]['type'] = TASK_type
+            if not finished:
+                di_nx_g.nodes[tuple(_t)]['type'] = TASK_type
 
     di_dgl_g = dgl.from_networkx(di_nx_g, node_attrs=['loc', 'type'], edge_attrs=['traj'])
     node_idx_dict = dict()

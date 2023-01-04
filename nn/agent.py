@@ -1,8 +1,7 @@
 import math
 import torch
 import torch.nn as nn
-from nn.gnn import GNN
-from nn.policynet import PolicyNet
+from nn.gnn import GNN, Bipartite
 from nn.memory import ReplayMemory
 from math import inf
 
@@ -11,13 +10,19 @@ class Agent(nn.Module):
     def __init__(self, embedding_dim=128, memory_size=50000, batch_size=100, gnn_layers=3):
         super(Agent, self).__init__()
         self.embedding_dim = embedding_dim
-        self.gnn = GNN(in_dim=3, out_dim=embedding_dim, embedding_dim=embedding_dim, n_layers=gnn_layers)
-        # self.policy_net = PolicyNet
-        self.policy_net = nn.Linear(embedding_dim, 5)
+
+        self.embedding = nn.Linear(3, embedding_dim)
+        self.gnn = GNN(in_dim=embedding_dim, out_dim=embedding_dim, embedding_dim=embedding_dim, n_layers=gnn_layers,
+                       residual=True)
+        self.bipartite_policy = Bipartite()
+
         self.replay_memory = ReplayMemory(capacity=memory_size, batch_size=batch_size)
 
-    def forward(self, di_dgl_g, ag_node_idx, task_node_indices, finished_task):
-        out_nf = self.gnn(di_dgl_g)
+    def forward(self, g, ag_node_idx, task_node_indices, finished_task):
+        feature = self.generate_feature(g)
+        nf = self.embedding(feature)
+        out_nf = self.gnn(g, nf)
+        policy = self.bipartite_policy.get_policy(g, out_nf)  ###### WIP
 
         ag_nf = out_nf[ag_node_idx]
         ag_nfs = ag_nf.repeat(len(task_node_indices), 1)
@@ -33,6 +38,10 @@ class Agent(nn.Module):
         action = torch.distributions.Categorical(pi.reshape(-1)).sample().item()
 
         return action
+
+    def generate_feature(self, g):
+        feature = torch.eye(3)[g.ndata['type']]
+        return feature
 
     def fit(self):
         pass
