@@ -11,7 +11,7 @@ from utils.vis_graph import vis_dist, vis_ta
 Create random scenarios and load one of them
 """
 # save_scenarios(C=1, M=20, N=50)
-scenario = load_scenarios('323220_1_10_10/scenario_1.pkl')
+scenario = load_scenarios('323220_1_20_50/scenario_1.pkl')
 grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
 vis_dist(graph, agent_pos, total_tasks)
 

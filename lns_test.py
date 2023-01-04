@@ -9,16 +9,16 @@ from utils.generate_scenarios import load_scenarios
 from utils.soc_ms import costa
 
 
-def test_lns(in_itr, out_itr, N):
+def test_lns(lns_step, exp_repeat, N):
     random.seed(3298)
     scenario = load_scenarios('323220_1_10_10/scenario_1.pkl')
     grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
 
-    for oi in range(out_itr):
+    for oi in range(exp_repeat):
         soc_list, ms_list = list(), list()
         task_idx, tasks = hungarian(graph, agent_pos, total_tasks)
 
-        for ii in range(in_itr):
+        for ii in range(lns_step):
             removal_idx = removal(task_idx, total_tasks, graph, N=N)
             for i, t in enumerate(tasks.values()):
                 for r in removal_idx:
@@ -39,7 +39,7 @@ def test_lns(in_itr, out_itr, N):
             soc_list.append(soc)
             ms_list.append(ms)
 
-        plt.plot(list(range(in_itr)), soc_list)
+        plt.plot(list(range(lns_step)), soc_list)
     plt.savefig('fig/N{}.png'.format(N))
     plt.clf()
 
