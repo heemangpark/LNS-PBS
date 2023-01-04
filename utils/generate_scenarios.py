@@ -7,7 +7,6 @@ from pathlib import Path
 import numpy as np
 
 from graph.generate_graph import gen_graph
-from utils.vis_graph import vis_graph
 
 curr_path = os.path.realpath(__file__)
 scenario_dir = os.path.join(Path(curr_path).parent.parent, 'scenarios')
@@ -19,26 +18,21 @@ scenario_dir = os.path.join(Path(curr_path).parent.parent, 'scenarios')
 """
 
 
-def save_scenarios(itr=10, size=32, obs=20, C=1, M=10, N=10):
+def save_scenarios(itr=10, size=32, obs=20, T=1, M=10, N=10):
     """
-    C: task length -> if 2, tau=(s, g)
+    T: task length -> if 2, tau=(s, g)
     M: the number of agents
     N: the number of tasks
     """
 
-    # 1
     instance, graph = gen_graph(size, obs)
     # vis_graph(graph)
 
     for it in range(itr):
 
-        # 3
         empty_idx = list(range(len(graph)))
         agent_idx = random.sample(empty_idx, M)
-        if (C == 1) or (C == 2):
-            tasks_len = [C for _ in range(N)]
-        else:
-            tasks_len = random.choices(list(range(1, C + 1)), k=N)
+        tasks_len = [1 for _ in range(N)] if T == 1 else random.choices(list(range(1, T + 1)), k=N)
         agent_pos = np.array([a for a in graph])[agent_idx]
         empty_idx = list(set(empty_idx) - set(agent_idx))
 
@@ -48,9 +42,8 @@ def save_scenarios(itr=10, size=32, obs=20, C=1, M=10, N=10):
             empty_idx = list(set(empty_idx) - set(temp_idx))
             tasks.append(np.array([t for t in graph])[temp_idx].tolist())
 
-        # 4
         datas = [instance, graph, agent_pos, tasks]
-        dir = scenario_dir + '/{}{}{}_{}_{}_{}/'.format(size, size, obs, C, M, N)
+        dir = scenario_dir + '/{}{}{}_{}_{}_{}/'.format(size, size, obs, T, M, N)
 
         try:
             if not os.path.exists(dir):

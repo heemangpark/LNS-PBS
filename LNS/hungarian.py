@@ -4,11 +4,11 @@ from scipy.optimize import linear_sum_assignment
 from utils.astar import graph_astar
 
 
-def cost_matrix(g, ap, t):
-    m = np.zeros((len(ap), len(t)))
-    for i in range(len(ap)):
+def cost_matrix(g, a, t):
+    m = np.zeros((len(a), len(t)))
+    for i in range(len(a)):
         for j in range(len(t)):
-            m[i][j] = graph_astar(g, ap[i], t[j][0])[1]
+            m[i][j] = graph_astar(g, a[i], t[j][0])[1]
 
     return m
 
