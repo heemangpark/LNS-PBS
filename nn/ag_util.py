@@ -56,7 +56,16 @@ def convert_dgl(nx_g, agent_pos, tasks, agent_traj, task_finished=[]):
     di_dgl_g.ndata['x'] = torch.tensor(coord_x)
     di_dgl_g.ndata['y'] = torch.tensor(coord_y)
 
-    return di_dgl_g, ag_node_indices, task_node_indices
+    # generate bipartite graph; to be used in the policy network
+    n_ag = len(agent_pos)
+    n_task = len(tasks)
+
+    src_idx = list(range(n_ag, n_ag + n_task)) * n_ag
+    dst_idx = [i for i in range(n_ag) for _ in range(n_task)]
+    bipartite_g = dgl.graph((src_idx, dst_idx))
+    bipartite_g.ndata['type'] = torch.tensor([AG_type] * n_ag + [TASK_type] * n_task)
+
+    return di_dgl_g, ag_node_indices, task_node_indices, bipartite_g
 
 
 if __name__ == '__main__':
