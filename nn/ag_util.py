@@ -65,7 +65,7 @@ def convert_dgl(nx_g, agent_pos, tasks, agent_traj, task_finished=[]):
     bipartite_g = dgl.graph((src_idx, dst_idx))
     bipartite_g.ndata['type'] = torch.tensor([AG_type] * n_ag + [TASK_type] * n_task)
 
-    return di_dgl_g, ag_node_indices, task_node_indices, bipartite_g
+    return di_dgl_g, bipartite_g, ag_node_indices, task_node_indices
 
 
 if __name__ == '__main__':

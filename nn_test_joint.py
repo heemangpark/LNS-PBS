@@ -33,7 +33,8 @@ episode_timestep = 0
 agent_traj = []
 # `task_finished` defined for each episode
 task_finished = [False for _ in range(N)]
-di_dgl_g, ag_node_indices, task_node_indices = convert_dgl(graph, agent_pos, total_tasks, agent_traj, task_finished)
+di_dgl_g, bipartite_g, ag_node_indices, task_node_indices = convert_dgl(graph, agent_pos, total_tasks, agent_traj,
+                                                                        task_finished)
 joint_action = []
 
 while not all(task_finished):
@@ -46,7 +47,7 @@ while not all(task_finished):
     for i, ag_node_idx in enumerate(ag_node_indices):
         if not all(task_selected):
             # index of task. action \in [1, ..., N]
-            action = ag(di_dgl_g, ag_node_idx, task_node_indices, task_selected)
+            action = ag(di_dgl_g, bipartite_g, ag_node_idx, task_node_indices, task_selected)
             task_node_idx = task_node_indices[action]
 
             # convert action to solver format (task pos)
@@ -106,9 +107,9 @@ while not all(task_finished):
     # TODO
     agent_traj = []
     terminated = all(task_finished)
-    ag.push(di_dgl_g, ag_node_indices, task_node_indices, next_t, terminated)
+    ag.push(di_dgl_g, bipartite_g, ag_node_indices, task_node_indices, next_t, terminated)
 
-    di_dgl_g, ag_node_indices, _ = convert_dgl(graph, agent_pos, total_tasks, agent_traj, task_finished)
+    di_dgl_g, ag_node_indices, _, bipartite_g = convert_dgl(graph, agent_pos, total_tasks, agent_traj, task_finished)
 
     # visualize
     vis_ta(graph, agent_pos, curr_tasks_solver, str(itr) + "_finished")

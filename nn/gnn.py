@@ -65,17 +65,28 @@ class GNNLayer(nn.Module):
 
 
 class Bipartite:
-    def get_policy(self, g: dgl.DGLGraph, nf):
+    """
+    Assume ag_size and task_size does not vary within batch
+    """
+
+    def get_policy(self, g: dgl.DGLGraph, bipartite_g, nf):
         g.ndata['nf'] = nf
 
-        # pull from task node idx to agent node idx
         ag_node_indices = g.filter_nodes(ag_node_func)
         task_node_indices = g.filter_nodes(task_node_func)
 
         ag_nfs = g.nodes[ag_node_indices].data['nf']
         task_nfs = g.nodes[task_node_indices].data['nf']
-        ###### WIP
 
+        # pull from task node idx to agent node idx
+        ag_node_indices = bipartite_g.filter_nodes(ag_node_func)
+        task_node_indices = bipartite_g.filter_nodes(task_node_func)
+
+        bipartite_g.nodes[ag_node_indices].data['nf'] = ag_nfs
+        bipartite_g.nodes[task_node_indices].data['nf'] = task_nfs
+
+    #     bipartite_g.
+    #
     # def
 
 
