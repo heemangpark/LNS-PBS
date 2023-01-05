@@ -10,7 +10,7 @@ from utils.vis_graph import vis_dist, vis_ta
 from copy import deepcopy
 
 solver_path = "EECBS/"
-M, N = 10, 9
+M, N = 10, 10
 if not os.path.exists('scenarios/323220_1_{}_{}/'.format(M, N)):
     save_scenarios(size=32, M=M, N=N)
 
@@ -54,6 +54,11 @@ while True:
         agent_pos_solver.append(agent_pos[ag_idx])
         curr_tasks_solver.append([[_x, _y]])
 
+    # non-selected agents
+    for ag_idx in set(range(M)) - set(selected_ag_idx):
+        agent_pos_solver.append(agent_pos[ag_idx])
+        curr_tasks_solver.append([agent_pos[ag_idx]])
+
     # visualize
     # vis_ta(graph, agent_pos_solver, curr_tasks_solver, str(itr) + "_assigned")
 
@@ -81,6 +86,7 @@ while True:
 
     # Read solver output
     agent_traj = read_trajectory(solver_path + scenario_name + "_paths.txt")
+    agent_traj = agent_traj[:len(selected_ag_idx)]
 
     # Mark finished agent, finished task
     next_t = np.min([len(t) for t in agent_traj])
