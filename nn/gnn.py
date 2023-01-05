@@ -64,12 +64,20 @@ class GNNLayer(nn.Module):
         return {'out_nf': out_feat}
 
 
-class Bipartite:
+class Bipartite(nn.Module):
+    def __init__(self, embedding_dim):
+        super(Bipartite, self).__init__()
+        self.embedding_dim = embedding_dim
+
+        self.K = nn.Linear(embedding_dim, embedding_dim)
+        self.Q = nn.Linear(embedding_dim, embedding_dim)
+        self.V = nn.Linear(embedding_dim, embedding_dim)
+
     """
     Assume ag_size and task_size does not vary within batch
     """
 
-    def get_policy(self, g: dgl.DGLGraph, bipartite_g, nf):
+    def get_policy(self, g: dgl.DGLGraph, bipartite_g: dgl.DGLGraph, nf):
         g.ndata['nf'] = nf
 
         ag_node_indices = g.filter_nodes(ag_node_func)
@@ -85,9 +93,17 @@ class Bipartite:
         bipartite_g.nodes[ag_node_indices].data['nf'] = ag_nfs
         bipartite_g.nodes[task_node_indices].data['nf'] = task_nfs
 
-    #     bipartite_g.
-    #
-    # def
+        bipartite_g.update_all(message_func=fn.copy_src('nf', 'm'), reduce_func=self.reduce,
+                               apply_node_func=self.apply_node)
+
+    def reduce(self, nodes):
+        m = nodes.mailbox['m']  # (# incoming edges, # nodes, hidden_dim)
+        nf = nodes.data['nf'].unsqueeze(1)  # unsqueeze on edge dim
+
+        return {}
+
+    def apply_node(self, nodes):
+        return
 
 
 def ag_node_func(nodes):

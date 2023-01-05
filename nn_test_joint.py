@@ -11,8 +11,8 @@ from copy import deepcopy
 
 solver_path = "EECBS/"
 M, N = 10, 10
-# if not os.path.exists('scenarios/323220_1_{}_{}/'.format(M, N)):
-# save_scenarios(size=32, M=M, N=N)
+if not os.path.exists('scenarios/323220_1_{}_{}/'.format(M, N)):
+    save_scenarios(size=32, M=M, N=N)
 
 scenario = load_scenarios('323220_1_{}_{}/scenario_1.pkl'.format(M, N))
 grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
@@ -85,7 +85,7 @@ while not all(task_finished):
     # runtime, num_restarts, num_expanded, num_generated, solution_cost, min_sum_of_costs, avg_path_length
     process_out = subprocess.run(c, capture_output=True)
     text_byte = process_out.stdout.decode('utf-8')
-    sum_costs = text_byte.split('Succeed,')[-1].split(',')[-3]
+    sum_costs = int(text_byte.split('Succeed,')[-1].split(',')[-3])
 
     # Read solver output
     agent_traj = read_trajectory(solver_path + scenario_name + "_paths.txt")
@@ -103,13 +103,14 @@ while not all(task_finished):
     # Replay memory 에 transition 저장. Agent position 을 graph 의 node 형태로
     # NOTE: solver out cost == 아래의 cost - M
     # costs = [len(t) for t in agent_traj]
-    print("itr:{}, cum_cost:{}, estimated_to_go:{}".format(itr, episode_timestep, sum_costs))
+    print("itr:{}, cum_cost:{}, curr_complete_time:{}".format(itr, episode_timestep,
+                                                              episode_timestep - next_t + sum_costs))
     # TODO
     agent_traj = []
     terminated = all(task_finished)
     ag.push(di_dgl_g, bipartite_g, ag_node_indices, task_node_indices, next_t, terminated)
 
-    di_dgl_g, ag_node_indices, _, bipartite_g = convert_dgl(graph, agent_pos, total_tasks, agent_traj, task_finished)
+    di_dgl_g, bipartite_g, ag_node_indices, _ = convert_dgl(graph, agent_pos, total_tasks, agent_traj, task_finished)
 
     # visualize
     vis_ta(graph, agent_pos, curr_tasks_solver, str(itr) + "_finished")

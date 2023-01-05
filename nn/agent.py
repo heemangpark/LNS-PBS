@@ -14,7 +14,7 @@ class Agent(nn.Module):
         self.embedding = nn.Linear(3, embedding_dim)
         self.gnn = GNN(in_dim=embedding_dim, out_dim=embedding_dim, embedding_dim=embedding_dim, n_layers=gnn_layers,
                        residual=True)
-        self.bipartite_policy = Bipartite()
+        self.bipartite_policy = Bipartite(embedding_dim)
 
         self.replay_memory = ReplayMemory(capacity=memory_size, batch_size=batch_size)
 
@@ -22,7 +22,7 @@ class Agent(nn.Module):
         feature = self.generate_feature(g)
         nf = self.embedding(feature)
         out_nf = self.gnn(g, nf)
-        policy = self.bipartite_policy.get_policy(g, bipartite_g, out_nf)  ###### WIP
+        # policy = self.bipartite_policy.get_policy(g, bipartite_g, out_nf)  ###### WIP
 
         ag_nf = out_nf[ag_node_idx]
         ag_nfs = ag_nf.repeat(len(task_node_indices), 1)
