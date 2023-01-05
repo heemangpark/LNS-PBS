@@ -21,7 +21,7 @@ grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], sce
 scenario_name = 'test1'
 save_map(grid, scenario_name)
 
-ag = Agent()
+agent = Agent()
 
 """
 TODO total_tasks format
@@ -32,7 +32,7 @@ episode_timestep = 0
 
 agent_traj = []
 # `task_finished` defined for each episode
-task_finished = [False for _ in range(N)]
+task_finished = np.array([False for _ in range(N)])
 di_dgl_g, bipartite_g, ag_node_indices, task_node_indices = convert_dgl(graph, agent_pos, total_tasks, agent_traj,
                                                                         task_finished)
 joint_action = []
@@ -42,28 +42,20 @@ while True:
     task_selected = deepcopy(task_finished)
     curr_tasks_solver = []
     agent_pos_solver = []
-    joint_action = []
-    # TODO: How to decide agent sequence? Currently by agent index
-    for i, ag_node_idx in enumerate(ag_node_indices):
-        if not all(task_selected):
-            # index of task. action \in [1, ..., N]
-            action = ag(di_dgl_g, bipartite_g, ag_node_idx, task_node_indices, task_selected)
-            task_node_idx = task_node_indices[action]
+    selected_ag_idx, joint_action = agent(di_dgl_g, bipartite_g, task_finished, ag_node_indices)
 
-            # convert action to solver format (task pos)
-            _x = di_dgl_g.nodes[task_node_idx].data['x'].item()
-            _y = di_dgl_g.nodes[task_node_idx].data['y'].item()
-            curr_tasks_solver.append([[_x, _y]])
-            agent_pos_solver.append(agent_pos[i])
-            task_selected[action] = True
-        else:
-            action = None
-            # maintain current position
+    # convert action to solver format
+    for ag_idx, action in zip(selected_ag_idx, joint_action):
+        task_node_idx = task_node_indices[action]
+        # convert action to solver format (task pos)
+        _x = di_dgl_g.nodes[task_node_idx].data['x'].item()
+        _y = di_dgl_g.nodes[task_node_idx].data['y'].item()
 
-        joint_action.append(action)
+        agent_pos_solver.append(agent_pos[ag_idx])
+        curr_tasks_solver.append([[_x, _y]])
 
     # visualize
-    vis_ta(graph, agent_pos_solver, curr_tasks_solver, str(itr) + "_assigned")
+    # vis_ta(graph, agent_pos_solver, curr_tasks_solver, str(itr) + "_assigned")
 
     # convert action to the solver input formation
     save_scenario(agent_pos_solver, curr_tasks_solver, scenario_name, grid.shape[0], grid.shape[1])
@@ -79,7 +71,7 @@ while True:
 
          "--outputPaths",
          solver_path + scenario_name + "_paths.txt",
-         "-k", "{}".format(len(agent_pos_solver)), "-t", "60", "--suboptimality=1.1"]
+         "-k", "{}".format(len(agent_pos_solver)), "-t", "1", "--suboptimality=1.1"]
 
     # process_out.stdout format
     # runtime, num_restarts, num_expanded, num_generated, solution_cost, min_sum_of_costs, avg_path_length
@@ -91,14 +83,20 @@ while True:
     agent_traj = read_trajectory(solver_path + scenario_name + "_paths.txt")
 
     # Mark finished agent, finished task
-    finished_ag_idx = np.argmin([len(t) for t in agent_traj])
     next_t = np.min([len(t) for t in agent_traj])
-    finished_task_idx = joint_action[finished_ag_idx]
+
+    finished_ag = np.array([len(t) for t in agent_traj]) == next_t  # as more than one agent may finish
+
+    finished_task_idx = np.array(joint_action)[finished_ag]
     task_finished[finished_task_idx] = True
     episode_timestep += next_t
 
     # overwrite output
-    agent_pos = [traj[next_t - 1] for traj in agent_traj]
+    agent_pos_new = deepcopy(agent_pos)
+    for i, ag in enumerate(selected_ag_idx):
+        agent_pos_new[ag] = agent_traj[i][next_t - 1]
+
+    agent_pos = agent_pos_new
 
     # Replay memory 에 transition 저장. Agent position 을 graph 의 node 형태로
     # NOTE: solver out cost == 아래의 cost - M
@@ -106,9 +104,9 @@ while True:
     print("itr:{}, cum_cost:{}, curr_complete_time:{}".format(itr, episode_timestep,
                                                               episode_timestep - next_t + sum_costs))
 
-    agent_traj = []
+    # agent_traj = []
     terminated = all(task_finished)
-    ag.push(di_dgl_g, bipartite_g, ag_node_indices, task_node_indices, next_t, terminated)
+    agent.push(di_dgl_g, bipartite_g, ag_node_indices, task_node_indices, next_t, terminated)
 
     if terminated:
         break
@@ -116,5 +114,5 @@ while True:
     di_dgl_g, bipartite_g, ag_node_indices, _ = convert_dgl(graph, agent_pos, total_tasks, agent_traj, task_finished)
 
     # visualize
-    vis_ta(graph, agent_pos, curr_tasks_solver, str(itr) + "_finished")
+    # vis_ta(graph, agent_pos, curr_tasks_solver, str(itr) + "_finished")
     itr += 1

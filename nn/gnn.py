@@ -74,6 +74,8 @@ class Bipartite(nn.Module):
                                           nn.LeakyReLU()
                                           )
 
+        self.ag_score = nn.Sequential(nn.Linear(embedding_dim, 1, bias=False), nn.LeakyReLU())
+
         # Todo:transformer
         # self.K = nn.Linear(embedding_dim, embedding_dim)
         # self.Q = nn.Linear(embedding_dim, embedding_dim)
@@ -83,13 +85,13 @@ class Bipartite(nn.Module):
     Assume ag_size and task_size does not vary within batch
     """
 
-    def get_policy(self, g: dgl.DGLGraph, bipartite_g: dgl.DGLGraph, nf):
+    def forward(self, g: dgl.DGLGraph, bipartite_g: dgl.DGLGraph, nf, ag_node_indices_outer):
         g.ndata['nf'] = nf
 
-        ag_node_indices = g.filter_nodes(ag_node_func)
+        # ag_node_indices = g.filter_nodes(ag_node_func)
         task_node_indices = g.filter_nodes(task_node_func)
 
-        ag_nfs = g.nodes[ag_node_indices].data['nf']
+        ag_nfs = g.nodes[ag_node_indices_outer].data['nf']
         task_nfs = g.nodes[task_node_indices].data['nf']
 
         # pull from task node idx to agent node idx
@@ -102,8 +104,12 @@ class Bipartite(nn.Module):
         bipartite_g.update_all(message_func=self.message, reduce_func=self.reduce,
                                apply_node_func=self.apply_node)
 
-        policy = bipartite_g.ndata.pop('policy')
-        return policy
+        policy = bipartite_g.ndata.pop('policy')[ag_node_indices]
+
+        ag_score = self.ag_score(ag_nfs).squeeze()
+        ag_policy = torch.softmax(ag_score, -1)
+
+        return policy, ag_policy
 
     def message(self, edges):
         src = edges.src['nf']

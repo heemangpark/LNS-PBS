@@ -4,6 +4,7 @@ import torch.nn as nn
 from nn.gnn import GNN, Bipartite
 from nn.memory import ReplayMemory
 from math import inf
+from copy import copy
 
 
 class Agent(nn.Module):
@@ -18,26 +19,33 @@ class Agent(nn.Module):
 
         self.replay_memory = ReplayMemory(capacity=memory_size, batch_size=batch_size)
 
-    def forward(self, g, bipartite_g, ag_node_idx, task_node_indices, finished_task):
+    def forward(self, g, bipartite_g, task_finished, ag_node_indices):
         feature = self.generate_feature(g)
         nf = self.embedding(feature)
         out_nf = self.gnn(g, nf)
-        # policy = self.bipartite_policy.get_policy(g, bipartite_g, out_nf)  ###### WIP
 
-        ag_nf = out_nf[ag_node_idx]
-        ag_nfs = ag_nf.repeat(len(task_node_indices), 1)
-        target_nf = out_nf[task_node_indices]
+        joint_policy, ag_policy = self.bipartite_policy(g, bipartite_g, out_nf, ag_node_indices)
+        joint_policy[:, task_finished] = -0
 
-        similarity = target_nf * ag_nfs
-        score = similarity.sum(-1, keepdims=True) / math.sqrt(self.embedding_dim)
+        joint_policy_temp = joint_policy.clone()
+        ag_policy_temp = ag_policy.clone()
 
-        # mask out finished task
-        score[finished_task] = -inf
+        selected_ag = []
+        out_action = []
 
-        pi = torch.softmax(score, 0)
-        action = torch.distributions.Categorical(pi.reshape(-1)).sample().item()
+        n_ag = joint_policy.shape[-2]
+        n_task = sum(~task_finished)
+        for itr in range(min(n_ag, n_task)):
+            agent_idx = torch.distributions.Categorical(ag_policy_temp).sample()
+            action = torch.distributions.Categorical(joint_policy_temp[agent_idx]).sample()
 
-        return action
+            selected_ag.append(agent_idx.item())
+            out_action.append(action.item())
+
+            ag_policy_temp[agent_idx] = 0
+            joint_policy_temp[:, out_action] = 0
+
+        return selected_ag, out_action
 
     def generate_feature(self, g):
         feature = torch.eye(3)[g.ndata['type']]
