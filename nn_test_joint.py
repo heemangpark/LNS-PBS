@@ -105,7 +105,7 @@ while True:
     # costs = [len(t) for t in agent_traj]
     print("itr:{}, cum_cost:{}, curr_complete_time:{}".format(itr, episode_timestep,
                                                               episode_timestep - next_t + sum_costs))
-    # TODO
+
     agent_traj = []
     terminated = all(task_finished)
     ag.push(di_dgl_g, bipartite_g, ag_node_indices, task_node_indices, next_t, terminated)
