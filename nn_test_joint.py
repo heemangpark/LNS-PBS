@@ -37,7 +37,7 @@ di_dgl_g, bipartite_g, ag_node_indices, task_node_indices = convert_dgl(graph, a
                                                                         task_finished)
 joint_action = []
 
-while not all(task_finished):
+while True:
     # `task_selected` initialized as the `task_finished` to jointly select task at each event
     task_selected = deepcopy(task_finished)
     curr_tasks_solver = []
@@ -109,6 +109,9 @@ while not all(task_finished):
     agent_traj = []
     terminated = all(task_finished)
     ag.push(di_dgl_g, bipartite_g, ag_node_indices, task_node_indices, next_t, terminated)
+
+    if terminated:
+        break
 
     di_dgl_g, bipartite_g, ag_node_indices, _ = convert_dgl(graph, agent_pos, total_tasks, agent_traj, task_finished)
 
