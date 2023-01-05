@@ -22,7 +22,7 @@ class Agent(nn.Module):
         feature = self.generate_feature(g)
         nf = self.embedding(feature)
         out_nf = self.gnn(g, nf)
-        # policy = self.bipartite_policy.get_policy(g, bipartite_g, out_nf)  ###### WIP
+        policy = self.bipartite_policy.get_policy(g, bipartite_g, out_nf)  ###### WIP
 
         ag_nf = out_nf[ag_node_idx]
         ag_nfs = ag_nf.repeat(len(task_node_indices), 1)

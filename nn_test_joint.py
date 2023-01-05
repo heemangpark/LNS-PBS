@@ -10,7 +10,7 @@ from utils.vis_graph import vis_dist, vis_ta
 from copy import deepcopy
 
 solver_path = "EECBS/"
-M, N = 10, 10
+M, N = 10, 9
 if not os.path.exists('scenarios/323220_1_{}_{}/'.format(M, N)):
     save_scenarios(size=32, M=M, N=N)
 

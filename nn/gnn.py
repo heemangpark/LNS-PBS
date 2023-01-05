@@ -3,6 +3,8 @@ import torch.nn as nn
 import dgl
 import dgl.function as fn
 
+from math import sqrt
+
 AG_type = 1
 TASK_type = 2
 
@@ -34,9 +36,9 @@ class GNN(nn.Module):
 class GNNLayer(nn.Module):
     def __init__(self, in_dim, out_dim):
         super(GNNLayer, self).__init__()
-        self.node_embedding = nn.Sequential(nn.Linear(out_dim + in_dim, out_dim),
+        self.node_embedding = nn.Sequential(nn.Linear(out_dim + in_dim, out_dim, bias=False),
                                             nn.LeakyReLU())
-        self.edge_embedding = nn.Sequential(nn.Linear(in_dim * 2 + 1, out_dim),
+        self.edge_embedding = nn.Sequential(nn.Linear(in_dim * 2 + 1, out_dim, bias=False),
                                             nn.LeakyReLU())
 
     def forward(self, g: dgl.DGLGraph, nf):
@@ -68,10 +70,14 @@ class Bipartite(nn.Module):
     def __init__(self, embedding_dim):
         super(Bipartite, self).__init__()
         self.embedding_dim = embedding_dim
+        self.attention_fc = nn.Sequential(nn.Linear(2 * embedding_dim, 1, bias=False),
+                                          nn.LeakyReLU()
+                                          )
 
-        self.K = nn.Linear(embedding_dim, embedding_dim)
-        self.Q = nn.Linear(embedding_dim, embedding_dim)
-        self.V = nn.Linear(embedding_dim, embedding_dim)
+        # Todo:transformer
+        # self.K = nn.Linear(embedding_dim, embedding_dim)
+        # self.Q = nn.Linear(embedding_dim, embedding_dim)
+        # self.V = nn.Linear(embedding_dim, embedding_dim)
 
     """
     Assume ag_size and task_size does not vary within batch
@@ -93,17 +99,34 @@ class Bipartite(nn.Module):
         bipartite_g.nodes[ag_node_indices].data['nf'] = ag_nfs
         bipartite_g.nodes[task_node_indices].data['nf'] = task_nfs
 
-        bipartite_g.update_all(message_func=fn.copy_src('nf', 'm'), reduce_func=self.reduce,
+        bipartite_g.update_all(message_func=self.message, reduce_func=self.reduce,
                                apply_node_func=self.apply_node)
 
-    def reduce(self, nodes):
-        m = nodes.mailbox['m']  # (# incoming edges, # nodes, hidden_dim)
-        nf = nodes.data['nf'].unsqueeze(1)  # unsqueeze on edge dim
+        policy = bipartite_g.ndata.pop('policy')
+        return policy
 
-        return {}
+    def message(self, edges):
+        src = edges.src['nf']
+        dst = edges.dst['nf']
+        m = torch.cat([src, dst], dim=1)
+        score = self.attention_fc(m)
+
+        # Todo:self-attention
+        # K = self.K(m)
+        # Q = self.Q(nf)
+        #
+        # score = (K * Q).sum(-1) / self.embedding_dim  # shape = (ag, task)
+        # policy = torch.softmax(A, -1)
+
+        return {'score': score}
+
+    def reduce(self, nodes):
+        score = nodes.mailbox['score']
+        policy = torch.softmax(score, 1).squeeze()
+        return {'policy': policy}
 
     def apply_node(self, nodes):
-        return
+        return {'policy': nodes.data['policy']}
 
 
 def ag_node_func(nodes):
