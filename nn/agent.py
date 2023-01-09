@@ -1,7 +1,8 @@
-import torch
-import dgl
-import torch.nn as nn
 import itertools
+
+import dgl
+import torch
+import torch.nn as nn
 
 from nn.gnn import GNN, Bipartite
 from nn.memory import ReplayMemory
@@ -114,6 +115,7 @@ class Agent(nn.Module):
         cost = next_t.sum()
         b_val = 0
         loss = (cost - baseline) * logit_sum
+        # TODO better loss design
 
         self.optimizer.zero_grad()
         loss.backward()
