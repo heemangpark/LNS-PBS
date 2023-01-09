@@ -69,7 +69,7 @@ class Agent(nn.Module):
 
     def fit(self):
         if len(self.replay_memory) < self.replay_memory.batch_size:
-            return {}
+            return {'loss': 0}
 
         di_dgl_g, bipartite_g, ag_node_indices, task_node_indices, selected_ag_idx, joint_action, task_finished, next_t, terminated = self.replay_memory.episode_sample()
 
@@ -114,6 +114,8 @@ class Agent(nn.Module):
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
+
+        self.replay_memory.memory = []  # on-policy
 
         return {'loss': loss.item()}
 
