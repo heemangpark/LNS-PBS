@@ -1,13 +1,13 @@
 import os
 import subprocess
+from copy import deepcopy
+
 import numpy as np
 
-from nn.agent import Agent
 from nn.ag_util import convert_dgl
+from nn.agent import Agent
 from utils.generate_scenarios import load_scenarios, save_scenarios
 from utils.solver_util import save_map, save_scenario, read_trajectory
-from utils.vis_graph import vis_dist, vis_ta
-from copy import deepcopy
 
 solver_path = "EECBS/"
 M, N = 10, 20
@@ -23,10 +23,6 @@ save_map(grid, scenario_name)
 
 agent = Agent()
 
-"""
-TODO total_tasks format
-태스크 전체 (순서대로) 쭉 나열된 일종의 task 집합 -> 'agent to task' 할당 집합으로 바꿔야 함 (main.py에서 tasks에 해당)
-"""
 itr = 0
 episode_timestep = 0
 
@@ -38,6 +34,7 @@ di_dgl_g, bipartite_g, ag_node_indices, task_node_indices = convert_dgl(graph, a
 joint_action = []
 
 while True:
+    """ 1.super-agent coordinates agent&task pairs """
     # `task_selected` initialized as the `task_finished` to jointly select task at each event
     task_selected = deepcopy(task_finished)
     curr_tasks_solver = []
@@ -62,6 +59,7 @@ while True:
     # visualize
     # vis_ta(graph, agent_pos_solver, curr_tasks_solver, str(itr) + "_assigned")
 
+    """ 2.pass created agent-task pairs to low level solver """
     # convert action to the solver input formation
     save_scenario(agent_pos_solver, curr_tasks_solver, scenario_name, grid.shape[0], grid.shape[1])
 

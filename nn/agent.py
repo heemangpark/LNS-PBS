@@ -1,10 +1,8 @@
-import math
 import torch
 import torch.nn as nn
+
 from nn.gnn import GNN, Bipartite
 from nn.memory import ReplayMemory
-from math import inf
-from copy import copy
 
 
 class Agent(nn.Module):
@@ -20,7 +18,7 @@ class Agent(nn.Module):
         self.replay_memory = ReplayMemory(capacity=memory_size, batch_size=batch_size)
 
     def forward(self, g, bipartite_g, task_finished, ag_node_indices):
-        feature = self.generate_feature(g)
+        feature = self.generate_feature(g)  # one-hot encoded feature 'type'
         nf = self.embedding(feature)
         out_nf = self.gnn(g, nf)
 

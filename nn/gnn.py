@@ -1,9 +1,6 @@
+import dgl
 import torch
 import torch.nn as nn
-import dgl
-import dgl.function as fn
-
-from math import sqrt
 
 AG_type = 1
 TASK_type = 2
@@ -136,8 +133,8 @@ class Bipartite(nn.Module):
 
 
 def ag_node_func(nodes):
-    return (nodes.data['type'] == AG_type)  # .squeeze(1)
+    return nodes.data['type'] == AG_type  # .squeeze(1)
 
 
 def task_node_func(nodes):
-    return (nodes.data['type'] == TASK_type)  # .squeeze(1)
+    return nodes.data['type'] == TASK_type  # .squeeze(1)
