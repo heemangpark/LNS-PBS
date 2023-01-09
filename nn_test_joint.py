@@ -12,6 +12,9 @@ from nn.ag_util import convert_dgl
 from nn.agent import Agent
 from utils.generate_scenarios import load_scenarios, save_scenarios
 from utils.solver_util import save_map, save_scenario, read_trajectory
+import wandb
+
+# wandb.init(project='etri-mapf', entity='curie_ahn')
 
 VISUALIZE = False
 solver_path = "EECBS/"
@@ -138,6 +141,7 @@ for e in range(10000):
             fit_res = agent.fit()
             torch.save(agent.state_dict(), 'saved.th')
             print('E:{}, loss:{:.5f}, return:{}'.format(e, fit_res['loss'], episode_timestep))
+            # wandb.log({'loss': fit_res['loss'], 'return': episode_timestep})
             break
 
         task_finished_bef = task_finished_aft
