@@ -82,14 +82,11 @@ class Bipartite(nn.Module):
     Assume ag_size and task_size does not vary within batch
     """
 
-    def forward(self, g: dgl.DGLGraph, bipartite_g: dgl.DGLGraph, nf, ag_node_indices_outer):
+    def forward(self, g: dgl.DGLGraph, bipartite_g: dgl.DGLGraph, nf, ag_node_indices, task_node_indices, task_finished):
         g.ndata['nf'] = nf
 
-        # ag_node_indices = g.filter_nodes(ag_node_func)
-        task_node_indices = g.filter_nodes(task_node_func)
-
-        ag_nfs = g.nodes[ag_node_indices_outer].data['nf']
-        task_nfs = g.nodes[task_node_indices].data['nf']
+        ag_nfs = g.nodes[ag_node_indices].data['nf']
+        task_nfs = g.nodes[task_node_indices].data['nf'][~task_finished]
 
         # pull from task node idx to agent node idx
         ag_node_indices = bipartite_g.filter_nodes(ag_node_func)

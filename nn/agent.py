@@ -1,4 +1,5 @@
 import torch
+import dgl
 import torch.nn as nn
 
 from nn.gnn import GNN, Bipartite
@@ -17,12 +18,12 @@ class Agent(nn.Module):
 
         self.replay_memory = ReplayMemory(capacity=memory_size, batch_size=batch_size)
 
-    def forward(self, g, bipartite_g, task_finished, ag_node_indices):
+    def forward(self, g, bipartite_g, task_finished, ag_node_indices, task_node_indices):
         feature = self.generate_feature(g)  # one-hot encoded feature 'type'
         nf = self.embedding(feature)
         out_nf = self.gnn(g, nf)
 
-        joint_policy, ag_policy = self.bipartite_policy(g, bipartite_g, out_nf, ag_node_indices)
+        joint_policy, ag_policy = self.bipartite_policy(g, bipartite_g, out_nf, ag_node_indices, task_node_indices, task_finished)
         joint_policy[:, task_finished] = -0
 
         joint_policy_temp = joint_policy.clone()
@@ -50,7 +51,17 @@ class Agent(nn.Module):
         return feature
 
     def fit(self):
-        pass
+        if len(self.replay_memory) < self.replay_memory.batch_size:
+            return {}
+
+        di_dgl_g, bipartite_g, ag_node_indices, task_node_indices, next_t, terminated = self.replay_memory.sample()
+
+        di_dgl_g = dgl.batch(di_dgl_g)
+        bipartite_g = dgl.batch(bipartite_g)
+
+        next_t = torch.Tensor(next_t)
+        terminated = torch.Tensor(terminated)
+
 
     def push(self, *args):
         self.replay_memory.push([*args])

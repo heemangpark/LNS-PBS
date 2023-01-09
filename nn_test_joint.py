@@ -1,6 +1,7 @@
 import os
 import subprocess
 from copy import deepcopy
+from utils.vis_graph import vis_ta
 
 import numpy as np
 
@@ -9,8 +10,9 @@ from nn.agent import Agent
 from utils.generate_scenarios import load_scenarios, save_scenarios
 from utils.solver_util import save_map, save_scenario, read_trajectory
 
+VISUALIZE = False
 solver_path = "EECBS/"
-M, N = 10, 20
+M, N = 10, 10
 if not os.path.exists('scenarios/323220_1_{}_{}/'.format(M, N)):
     save_scenarios(size=32, M=M, N=N)
 
@@ -21,7 +23,7 @@ grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], sce
 scenario_name = 'test1'
 save_map(grid, scenario_name)
 
-agent = Agent()
+agent = Agent(batch_size=3)
 
 itr = 0
 episode_timestep = 0
@@ -39,7 +41,7 @@ while True:
     task_selected = deepcopy(task_finished)
     curr_tasks_solver = []
     agent_pos_solver = []
-    selected_ag_idx, joint_action = agent(di_dgl_g, bipartite_g, task_finished, ag_node_indices)
+    selected_ag_idx, joint_action = agent(di_dgl_g, bipartite_g, task_finished, ag_node_indices, task_node_indices)
 
     # convert action to solver format
     for ag_idx, action in zip(selected_ag_idx, joint_action):
@@ -57,7 +59,8 @@ while True:
         curr_tasks_solver.append([agent_pos[ag_idx]])
 
     # visualize
-    # vis_ta(graph, agent_pos_solver, curr_tasks_solver, str(itr) + "_assigned")
+    if VISUALIZE:
+        vis_ta(graph, agent_pos_solver, curr_tasks_solver, str(itr) + "_assigned")
 
     """ 2.pass created agent-task pairs to low level solver """
     # convert action to the solver input formation
@@ -112,11 +115,13 @@ while True:
     terminated = all(task_finished)
     agent.push(di_dgl_g, bipartite_g, ag_node_indices, task_node_indices, next_t, terminated)
 
+    if VISUALIZE:
+        vis_ta(graph, agent_pos, curr_tasks_solver, str(itr) + "_finished")
     if terminated:
+        # agent.fit()
         break
 
     di_dgl_g, bipartite_g, ag_node_indices, _ = convert_dgl(graph, agent_pos, total_tasks, agent_traj, task_finished)
 
     # visualize
-    # vis_ta(graph, agent_pos, curr_tasks_solver, str(itr) + "_finished")
     itr += 1
