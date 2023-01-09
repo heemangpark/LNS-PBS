@@ -16,7 +16,15 @@ class ReplayMemory:
         self.position += 1
 
     def sample(self):
-        return random.sample(self.memory, self.batch_size)
+        out = random.sample(self.memory, self.batch_size)
+        return list(map(list, zip(*out)))
 
     def can_sample(self):
         return len(self.memory) >= self.batch_size
+
+    def episode_sample(self):
+        out = self.memory
+        return list(map(list, zip(*out)))
+
+    def __len__(self):
+        return len(self.memory)

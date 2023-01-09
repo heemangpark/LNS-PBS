@@ -12,7 +12,7 @@ from utils.solver_util import save_map, save_scenario, read_trajectory
 
 VISUALIZE = False
 solver_path = "EECBS/"
-M, N = 10, 10
+M, N = 10, 9
 if not os.path.exists('scenarios/323220_1_{}_{}/'.format(M, N)):
     save_scenarios(size=32, M=M, N=N)
 
@@ -30,18 +30,18 @@ episode_timestep = 0
 
 agent_traj = []
 # `task_finished` defined for each episode
-task_finished = np.array([False for _ in range(N)])
+task_finished_bef = np.array([False for _ in range(N)])
 di_dgl_g, bipartite_g, ag_node_indices, task_node_indices = convert_dgl(graph, agent_pos, total_tasks, agent_traj,
-                                                                        task_finished)
+                                                                        task_finished_bef)
 joint_action = []
 
 while True:
     """ 1.super-agent coordinates agent&task pairs """
     # `task_selected` initialized as the `task_finished` to jointly select task at each event
-    task_selected = deepcopy(task_finished)
+    task_selected = deepcopy(task_finished_bef)
     curr_tasks_solver = []
     agent_pos_solver = []
-    selected_ag_idx, joint_action = agent(di_dgl_g, bipartite_g, task_finished, ag_node_indices, task_node_indices)
+    selected_ag_idx, joint_action = agent(di_dgl_g, bipartite_g, task_finished_bef, ag_node_indices, task_node_indices)
 
     # convert action to solver format
     for ag_idx, action in zip(selected_ag_idx, joint_action):
@@ -92,10 +92,11 @@ while True:
     # Mark finished agent, finished task
     next_t = np.min([len(t) for t in agent_traj])
 
-    finished_ag = np.array([len(t) for t in agent_traj]) == next_t  # as more than one agent may finish
+    finished_ag = np.array([len(t) for t in agent_traj]) == next_t  # as more than one agent may finish at a time
 
     finished_task_idx = np.array(joint_action)[finished_ag]
-    task_finished[finished_task_idx] = True
+    task_finished_aft = deepcopy(task_finished_bef)
+    task_finished_aft[finished_task_idx] = True
     episode_timestep += next_t
 
     # overwrite output
@@ -112,16 +113,18 @@ while True:
                                                               episode_timestep - next_t + sum_costs))
 
     # agent_traj = []
-    terminated = all(task_finished)
-    agent.push(di_dgl_g, bipartite_g, ag_node_indices, task_node_indices, next_t, terminated)
+    terminated = all(task_finished_aft)
+    agent.push(di_dgl_g, bipartite_g, ag_node_indices, task_node_indices, selected_ag_idx, joint_action,
+               deepcopy(task_finished_bef), next_t, terminated)
 
     if VISUALIZE:
         vis_ta(graph, agent_pos, curr_tasks_solver, str(itr) + "_finished")
     if terminated:
-        # agent.fit()
+        agent.fit()
         break
 
-    di_dgl_g, bipartite_g, ag_node_indices, _ = convert_dgl(graph, agent_pos, total_tasks, agent_traj, task_finished)
+    task_finished_bef = task_finished_aft
+    di_dgl_g, bipartite_g, ag_node_indices, _ = convert_dgl(graph, agent_pos, total_tasks, agent_traj, task_finished_bef)
 
     # visualize
     itr += 1

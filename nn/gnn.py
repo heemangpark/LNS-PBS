@@ -83,6 +83,7 @@ class Bipartite(nn.Module):
     """
 
     def forward(self, g: dgl.DGLGraph, bipartite_g: dgl.DGLGraph, nf, ag_node_indices, task_node_indices, task_finished):
+        n_batch = g.batch_size
         g.ndata['nf'] = nf
 
         ag_nfs = g.nodes[ag_node_indices].data['nf']
@@ -99,8 +100,9 @@ class Bipartite(nn.Module):
                                apply_node_func=self.apply_node)
 
         policy = bipartite_g.ndata.pop('policy')[ag_node_indices]
+        # policy = policy.reshape(n_batch, -1, policy.shape[-1])
 
-        ag_score = self.ag_score(ag_nfs).squeeze()
+        ag_score = self.ag_score(ag_nfs).squeeze().reshape(n_batch, -1)
         ag_policy = torch.softmax(ag_score, -1)
 
         return policy, ag_policy
