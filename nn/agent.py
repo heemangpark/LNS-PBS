@@ -21,7 +21,7 @@ class Agent(nn.Module):
 
         self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
 
-    def forward(self, g, bipartite_g, task_finished, ag_node_indices, task_node_indices):
+    def forward(self, g, bipartite_g, task_finished, ag_node_indices, task_node_indices, sample=True):
         feature = self.generate_feature(g)  # one-hot encoded feature 'type'
         nf = self.embedding(feature)
         out_nf = self.gnn(g, nf)
@@ -40,8 +40,12 @@ class Agent(nn.Module):
         n_ag = joint_policy.shape[-2]
         n_task = sum(~task_finished)
         for itr in range(min(n_ag, n_task)):
-            agent_idx = torch.distributions.Categorical(ag_policy_temp).sample()
-            action = torch.distributions.Categorical(joint_policy_temp[agent_idx]).sample()
+            if sample:
+                agent_idx = torch.distributions.Categorical(ag_policy_temp).sample()
+                action = torch.distributions.Categorical(joint_policy_temp[agent_idx]).sample()
+            else:
+                agent_idx = ag_policy_temp.argmax()
+                action = joint_policy_temp[agent_idx].argmax()
             # action = torch.distributions.Categorical(joint_policy_temp[:, agent_idx]).sample()
 
             selected_ag.append(agent_idx.item())
@@ -67,9 +71,9 @@ class Agent(nn.Module):
         feature = torch.eye(3)[g.ndata['type']]
         return feature
 
-    def fit(self):
-        if len(self.replay_memory) < self.replay_memory.batch_size:
-            return {'loss': 0}
+    def fit(self, baseline=0):
+        # if len(self.replay_memory) < self.replay_memory.batch_size:
+        #     return {'loss': 0}
 
         di_dgl_g, bipartite_g, ag_node_indices, task_node_indices, selected_ag_idx, joint_action, task_finished, next_t, terminated = self.replay_memory.episode_sample()
 
@@ -106,13 +110,14 @@ class Agent(nn.Module):
         selected_ag_policy = joint_policy[selected_ag_idx]
         selected_ag_logit = selected_ag_policy.gather(0, joint_action)
 
-        logit_sum = - selected_ag_logit.log().mean()
+        logit_sum = - (selected_ag_logit + 1e-5).log().mean()
         cost = next_t.sum()
         b_val = 0
-        loss = (cost - b_val) * logit_sum
+        loss = (cost - baseline) * logit_sum
 
         self.optimizer.zero_grad()
         loss.backward()
+        torch.nn.utils.clip_grad_norm(self.parameters(), 0.5)
         self.optimizer.step()
 
         self.replay_memory.memory = []  # on-policy
