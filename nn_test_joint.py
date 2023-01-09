@@ -93,7 +93,11 @@ for e in range(10000):
         # runtime, num_restarts, num_expanded, num_generated, solution_cost, min_sum_of_costs, avg_path_length
         process_out = subprocess.run(c, capture_output=True)
         text_byte = process_out.stdout.decode('utf-8')
-        sum_costs = int(text_byte.split('Succeed,')[-1].split(',')[-3])
+        try:
+            sum_costs = int(text_byte.split('Succeed,')[-1].split(',')[-3])
+        except:
+            agent.replay_memory.memory = []
+            break
 
         # Read solver output
         agent_traj = read_trajectory(solver_path + scenario_name + "_paths.txt")
