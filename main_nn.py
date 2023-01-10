@@ -2,6 +2,7 @@ import os
 import subprocess
 from collections import deque
 from copy import deepcopy
+from datetime import datetime
 
 import numpy as np
 import torch
@@ -13,15 +14,16 @@ from utils.generate_scenarios import load_scenarios, save_scenarios
 from utils.solver_util import save_map, save_scenario, read_trajectory
 from utils.vis_graph import vis_ta
 
-# wandb.init(project='etri-mapf', entity='curie_ahn')
+exp_name = datetime.now().strftime("%Y%m%d_%H%M")
+scenario_name = exp_name
+wandb.init(project='etri-mapf', entity='curie_ahn', name=exp_name)
 
 VISUALIZE = False
 solver_path = "EECBS/"
-M, N = 10, 10
+M, N = 10, 30
 if not os.path.exists('scenarios/323220_1_{}_{}/'.format(M, N)):
     save_scenarios(size=32, M=M, N=N)
 
-scenario_name = 'test1'
 # scenario = load_scenarios('323220_1_{}_{}/scenario_1.pkl'.format(M, N))
 # grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
 # save_map(grid, scenario_name)
@@ -143,13 +145,13 @@ for e in range(10000):
 
         if terminated:
             avg_return.append(episode_timestep)
-            torch.save(agent.state_dict(), 'saved/saved_1e4.th')
+            torch.save(agent.state_dict(), 'saved/{}.th'.format(exp_name))
             fit_res = agent.fit(baseline=sum(avg_return) / len(avg_return))
             print('E:{}, loss:{:.5f}, return:{}'.format(e, fit_res['loss'], episode_timestep))
             wandb.log({'loss': fit_res['loss'], 'return': episode_timestep})
             break
 
         task_finished_bef = task_finished_aft
-        di_dgl_g, bipartite_g, ag_node_indices, _ = convert_dgl(graph, agent_pos, total_tasks, agent_traj,
+        di_dgl_g, bipartite_g, ag_node_indices, _ = convert_dgl(graph, agent_pos, total_tasks, [],
                                                                 task_finished_bef)
         itr += 1

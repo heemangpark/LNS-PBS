@@ -88,3 +88,4 @@ def vis_ta(graph, agents, tasks, itr):
     fig.tight_layout()
     fig.savefig(fig_dir + '/ta_{}.png'.format(itr), bbox_inches='tight')
     plt.clf()
+    plt.close()
