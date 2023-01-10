@@ -15,7 +15,7 @@ from utils.generate_scenarios import load_scenarios, save_scenarios
 from utils.solver_util import save_map, save_scenario, read_trajectory
 import wandb
 
-wandb.init(project='etri-mapf', entity='curie_ahn')
+# wandb.init(project='etri-mapf', entity='curie_ahn')
 
 VISUALIZE = False
 solver_path = "EECBS/"
@@ -142,7 +142,7 @@ for e in range(10000):
 
         if terminated:
             avg_return.append(episode_timestep)
-            torch.save(agent.state_dict(), 'saved.th')
+            torch.save(agent.state_dict(), 'saved/saved_1e4.th')
             fit_res = agent.fit(baseline=sum(avg_return) / len(avg_return))
             print('E:{}, loss:{:.5f}, return:{}'.format(e, fit_res['loss'], episode_timestep))
             wandb.log({'loss': fit_res['loss'], 'return': episode_timestep})

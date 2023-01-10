@@ -19,7 +19,7 @@ class Agent(nn.Module):
 
         self.replay_memory = ReplayMemory(capacity=memory_size, batch_size=batch_size)
 
-        self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-4)
 
     def forward(self, g, bipartite_g, task_finished, ag_node_indices, task_node_indices, sample=True):
         feature = self.generate_feature(g)  # one-hot encoded feature 'type'
@@ -46,7 +46,6 @@ class Agent(nn.Module):
             else:
                 agent_idx = ag_policy_temp.argmax()
                 action = joint_policy_temp[agent_idx].argmax()
-            # action = torch.distributions.Categorical(joint_policy_temp[:, agent_idx]).sample()
 
             selected_ag.append(agent_idx.item())
             out_action.append(action.item())
@@ -110,10 +109,13 @@ class Agent(nn.Module):
         selected_ag_policy = joint_policy[selected_ag_idx]
         selected_ag_logit = selected_ag_policy.gather(0, joint_action)
 
+        high_level_logit = ag_policy.reshape(-1)[selected_ag_idx]
+
+        high_logit_mean = -(high_level_logit + 1e-5).log().mean()
         logit_sum = - (selected_ag_logit + 1e-5).log().mean()
         cost = next_t.sum()
         b_val = 0
-        loss = (cost - baseline) * logit_sum
+        loss = (cost - baseline) * (logit_sum + high_level_logit)
 
         self.optimizer.zero_grad()
         loss.backward()
