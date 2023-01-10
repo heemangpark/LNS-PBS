@@ -42,7 +42,7 @@ def vis_dist(graph, agents, tasks):
     plt.clf()
 
 
-def vis_ta(graph, agents, tasks, itr):
+def vis_ta(graph, agents, tasks, itr, total_tasks=None, task_finished=None):
     fig, ax = plt.subplots(figsize=(6, 6))
     pos = dict()
     for i in range(len(graph)):
@@ -71,6 +71,12 @@ def vis_ta(graph, agents, tasks, itr):
     #     t_colors += [colors[c] for _ in range(len(t))]
     #     for _t in t:
     #         task_nodes.append(tuple(list(_t.values())[0][0]))
+    if total_tasks is not None:
+        total_task = []
+        for t, finished in zip(total_tasks, task_finished):
+            if not finished:
+                total_task.append(tuple(t[0]))
+        nx.draw(graph, pos=pos, nodelist=total_task, node_size=100, node_shape='X', node_color='gray')
 
     nx.draw(graph, pos=pos, nodelist=[tuple(a) for a in agents], node_size=100, node_color=colors)
     nx.draw(graph, pos=pos, nodelist=task_nodes, node_size=100, node_shape='X', node_color=colors)

@@ -25,10 +25,11 @@ def save_scenarios(itr=10, size=32, obs=20, T=1, M=10, N=10):
     N: the number of tasks
     """
 
-    instance, graph = gen_graph(size, obs)
+    # instance, graph = gen_graph(size, obs)
     # vis_graph(graph)
 
     for it in range(itr):
+        instance, graph = gen_graph(size, obs)
 
         empty_idx = list(range(len(graph)))
         agent_idx = random.sample(empty_idx, M)
