@@ -111,11 +111,11 @@ class Agent(nn.Module):
 
         high_level_logit = ag_policy.reshape(-1)[selected_ag_idx]
 
-        high_logit_mean = -(high_level_logit + 1e-5).log().mean()
-        logit_sum = - (selected_ag_logit + 1e-5).log().mean()
+        high_logit_mean = (high_level_logit + 1e-5).log().mean()
+        logit_sum = (selected_ag_logit + 1e-5).log().mean()
         cost = next_t.sum()
         b_val = 0
-        loss = (cost - baseline) * (logit_sum + high_level_logit)
+        loss = (cost - baseline) * (logit_sum + high_logit_mean)
 
         self.optimizer.zero_grad()
         loss.backward()
