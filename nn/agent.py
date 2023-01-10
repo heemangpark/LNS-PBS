@@ -12,7 +12,7 @@ class Agent(nn.Module):
         super(Agent, self).__init__()
         self.embedding_dim = embedding_dim
 
-        self.embedding = nn.Linear(3, embedding_dim)
+        self.embedding = nn.Linear(5, embedding_dim)
         self.gnn = GNN(in_dim=embedding_dim, out_dim=embedding_dim, embedding_dim=embedding_dim, n_layers=gnn_layers,
                        residual=True)
         self.bipartite_policy = Bipartite(embedding_dim)
@@ -22,14 +22,18 @@ class Agent(nn.Module):
         self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-4)
 
     def forward(self, g, bipartite_g, task_finished, ag_node_indices, task_node_indices, sample=True):
+
+        if type(ag_node_indices) != list:
+            ag_node_indices = ag_node_indices.view().reshape(-1)
+            task_node_indices = task_node_indices.view().reshape(-1)
+            task_finished = task_finished.view().reshape(-1)
+
         feature = self.generate_feature(g)  # one-hot encoded feature 'type'
         nf = self.embedding(feature)
         out_nf = self.gnn(g, nf)
 
         joint_policy, ag_policy = self.bipartite_policy(g, bipartite_g, out_nf, ag_node_indices, task_node_indices,
                                                         task_finished)
-        # joint_policy[:, task_finished] = -0
-        # joint_policy[:, :, task_finished] = -0
 
         joint_policy_temp = joint_policy.clone()
         ag_policy_temp = ag_policy.clone()
@@ -68,6 +72,7 @@ class Agent(nn.Module):
 
     def generate_feature(self, g):
         feature = torch.eye(3)[g.ndata['type']]
+        feature = torch.cat([feature, g.ndata['loc']], -1)
         return feature
 
     def fit(self, baseline=0):

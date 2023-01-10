@@ -16,7 +16,7 @@ from utils.solver_util import save_map, save_scenario, read_trajectory
 
 VISUALIZE = True
 solver_path = "EECBS/"
-M, N = 10, 10
+M, N = 10, 20
 if not os.path.exists('scenarios/323220_1_{}_{}/'.format(M, N)):
     save_scenarios(size=32, M=M, N=N)
 
@@ -28,7 +28,7 @@ scenario_name = 'asdf'
 
 
 agent = Agent(batch_size=3)
-agent.load_state_dict(torch.load('saved_1e4.th'))
+agent.load_state_dict(torch.load('saved/20230110_1609.th'))
 
 save_scenarios(size=32, M=M, N=N)
 scenario = load_scenarios('323220_1_{}_{}/scenario_1.pkl'.format(M, N))
@@ -71,7 +71,7 @@ while True:
 
     # visualize
     if VISUALIZE:
-        vis_ta(graph, agent_pos_solver, curr_tasks_solver, str(itr) + "_assigned")
+        vis_ta(graph, agent_pos_solver, curr_tasks_solver, str(itr) + "_assigned", total_tasks, task_finished_bef)
 
     """ 2.pass created agent-task pairs to low level solver """
     # convert action to the solver input formation
@@ -134,7 +134,7 @@ while True:
 
     if VISUALIZE:
         vis_ta(graph, agent_pos[selected_ag_idx + list(set(range(M)) - set(selected_ag_idx))], curr_tasks_solver,
-               str(itr) + "_finished")
+               str(itr) + "_finished", total_tasks, task_finished_aft)
 
     if terminated:
         print(episode_timestep)
