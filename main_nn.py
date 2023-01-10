@@ -1,19 +1,17 @@
 import os
 import subprocess
-from copy import deepcopy
 from collections import deque
-
-import torch
-
-from utils.vis_graph import vis_ta
+from copy import deepcopy
 
 import numpy as np
+import torch
+import wandb
 
 from nn.ag_util import convert_dgl
 from nn.agent import Agent
 from utils.generate_scenarios import load_scenarios, save_scenarios
 from utils.solver_util import save_map, save_scenario, read_trajectory
-import wandb
+from utils.vis_graph import vis_ta
 
 # wandb.init(project='etri-mapf', entity='curie_ahn')
 
@@ -108,6 +106,9 @@ for e in range(10000):
         agent_traj = read_trajectory(solver_path + scenario_name + "_paths.txt")
         agent_traj = agent_traj[:len(selected_ag_idx)]
 
+        # TODO makespan -> sum of cost
+        # TODO batch training loop
+
         # Mark finished agent, finished task
         next_t = np.min([len(t) for t in agent_traj])
 
@@ -151,6 +152,4 @@ for e in range(10000):
         task_finished_bef = task_finished_aft
         di_dgl_g, bipartite_g, ag_node_indices, _ = convert_dgl(graph, agent_pos, total_tasks, agent_traj,
                                                                 task_finished_bef)
-
-        # visualize
         itr += 1
