@@ -28,7 +28,7 @@ class Agent(nn.Module):
 
         joint_policy, ag_policy = self.bipartite_policy(g, bipartite_g, out_nf, ag_node_indices, task_node_indices,
                                                         task_finished)
-        joint_policy[:, task_finished] = -0
+        # joint_policy[:, task_finished] = -0
         # joint_policy[:, :, task_finished] = -0
 
         joint_policy_temp = joint_policy.clone()

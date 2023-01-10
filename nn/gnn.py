@@ -1,6 +1,7 @@
 import dgl
 import torch
 import torch.nn as nn
+from math import inf
 
 AG_type = 1
 TASK_type = 2
@@ -93,8 +94,10 @@ class Bipartite(nn.Module):
         ag_node_indices = bipartite_g.filter_nodes(ag_node_func)
         task_node_indices = bipartite_g.filter_nodes(task_node_func)
 
+        bipartite_g.ndata['finished'] = torch.ones(bipartite_g.number_of_nodes(), 1)
         bipartite_g.nodes[ag_node_indices].data['nf'] = ag_nfs
         bipartite_g.nodes[task_node_indices].data['nf'] = task_nfs
+        bipartite_g.nodes[task_node_indices].data['finished'] = torch.zeros(task_nfs.shape[0], 1)
 
         bipartite_g.update_all(message_func=self.message, reduce_func=self.reduce,
                                apply_node_func=self.apply_node)
@@ -112,6 +115,9 @@ class Bipartite(nn.Module):
         dst = edges.dst['nf']
         m = torch.cat([src, dst], dim=1)
         score = self.attention_fc(m)
+        task_finished = edges.src['finished']
+        # score = score - inf * task_finished.bool()
+        score[task_finished.bool()] = -inf
 
         # Todo:self-attention
         # K = self.K(m)
