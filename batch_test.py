@@ -1,12 +1,11 @@
-import os
 import subprocess
 from collections import deque
 from copy import deepcopy
 from datetime import datetime
+import dgl
 
 import numpy as np
 import torch
-import wandb
 
 from nn.ag_util import convert_dgl
 from nn.agent import Agent
@@ -16,48 +15,67 @@ from utils.vis_graph import vis_ta
 
 exp_name = datetime.now().strftime("%Y%m%d_%H%M")
 scenario_name = exp_name
-wandb.init(project='etri-mapf', entity='curie_ahn', name=exp_name)
 
 VISUALIZE = False
 solver_path = "EECBS/"
-M, N = 10, 30
-if not os.path.exists('scenarios/323220_1_{}_{}/'.format(M, N)):
-    save_scenarios(size=32, M=M, N=N)
+M, N = 10, 20
 
-# scenario = load_scenarios('323220_1_{}_{}/scenario_1.pkl'.format(M, N))
-# grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
-# save_map(grid, scenario_name)
-# vis_dist(graph, agent_pos, total_tasks)
-
-
-agent = Agent(batch_size=3)
+agent = Agent()
 avg_return = deque(maxlen=50)
+n_batch = 7
 
 for e in range(10000):
-    save_scenarios(size=32, M=M, N=N)
-    scenario = load_scenarios('323220_1_{}_{}/scenario_1.pkl'.format(M, N))
-    grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
-    save_map(grid, scenario_name)
+    save_scenarios(size=32, M=M, N=N, itr=n_batch)
+
+    g_batch = []
+    bipartite_g_batch = []
+    ag_node_indices_batch = []
+    task_node_indices_batch = []
+
+    task_finished_bef = np.full((n_batch, N), False)
+
+    for i in range(n_batch):
+        scenario = load_scenarios('323220_1_{}_{}/scenario_{}.pkl'.format(M, N, i + 1))
+        grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
+        save_map(grid, scenario_name + "_" + str(i))
+
+        di_dgl_g, bipartite_g, ag_node_indices, task_node_indices = convert_dgl(graph, agent_pos, total_tasks, [],
+                                                                                task_finished_bef[i])
+        g_batch.append(di_dgl_g)
+        bipartite_g_batch.append(bipartite_g)
+        ag_node_indices_batch.append(ag_node_indices)
+        task_node_indices_batch.append(task_node_indices)
+
+    g_size = [g.number_of_nodes() for g in g_batch]
+    g_size = np.array(g_size)
+    cumsum_g_size = np.cumsum(g_size) - g_size[0]
+
+    g_batch = dgl.batch(g_batch)
+    bipartite_g_batch = dgl.batch(bipartite_g_batch)
+    ag_node_indices_batch = np.stack(ag_node_indices_batch)  # shape = (batch, M)
+    task_node_indices_batch = np.stack(task_node_indices_batch)  # shape = (batch, N)
+
+    # convert index into batched graph index
+    ag_node_indices_batch = ag_node_indices_batch + cumsum_g_size.reshape(-1, 1)
+    task_node_indices_batch = task_node_indices_batch + cumsum_g_size.reshape(-1, 1)
 
     itr = 0
     episode_timestep = 0
 
     agent_traj = []
     # `task_finished` defined for each episode
-    task_finished_bef = np.array([False for _ in range(N)])
-    di_dgl_g, bipartite_g, ag_node_indices, task_node_indices = convert_dgl(graph, agent_pos, total_tasks, agent_traj,
-                                                                            task_finished_bef)
     joint_action = []
 
     while True:
-        """ 1.super-agent coordinates agent&task pairs """
+        """ 1.super-agent coordinates agent & task pairs """
         # `task_selected` initialized as the `task_finished` to jointly select task at each event
         task_selected = deepcopy(task_finished_bef)
+        selected_ag_idx, joint_action = agent(g_batch, bipartite_g_batch, task_finished_bef, ag_node_indices_batch,
+                                              task_node_indices_batch)
+
+        # DEBUG ongoing
         curr_tasks_solver = []
         agent_pos_solver = []
-        selected_ag_idx, joint_action = agent(di_dgl_g, bipartite_g, task_finished_bef, ag_node_indices,
-                                              task_node_indices)
-
         # convert action to solver format
         for ag_idx, action in zip(selected_ag_idx, joint_action):
             task_node_idx = task_node_indices[action]
@@ -148,7 +166,6 @@ for e in range(10000):
             torch.save(agent.state_dict(), 'saved/{}.th'.format(exp_name))
             fit_res = agent.fit(baseline=sum(avg_return) / len(avg_return))
             print('E:{}, loss:{:.5f}, return:{}'.format(e, fit_res['loss'], episode_timestep))
-            wandb.log({'loss': fit_res['loss'], 'return': episode_timestep})
             break
 
         task_finished_bef = task_finished_aft
