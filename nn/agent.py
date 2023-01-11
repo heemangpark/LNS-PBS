@@ -22,7 +22,7 @@ class Agent(nn.Module):
         self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-4)
 
     def forward(self, g, bipartite_g, task_finished, ag_node_indices, task_node_indices, sample=True):
-
+        bs = g.batch_size
         if type(ag_node_indices) != list:
             ag_node_indices = ag_node_indices.view().reshape(-1)
             task_node_indices = task_node_indices.view().reshape(-1)
@@ -35,29 +35,37 @@ class Agent(nn.Module):
         joint_policy, ag_policy = self.bipartite_policy(g, bipartite_g, out_nf, ag_node_indices, task_node_indices,
                                                         task_finished)
 
-        joint_policy_temp = joint_policy.clone()
+        n_ag = ag_policy.shape[-1]
+
+        joint_policy_temp = joint_policy.clone().reshape(bs, n_ag, -1)
         ag_policy_temp = ag_policy.clone()
 
         selected_ag = []
         out_action = []
 
-        n_ag = joint_policy.shape[-2]
-        n_task = sum(~task_finished)
+        n_task = joint_policy_temp.shape[-1]
         for itr in range(min(n_ag, n_task)):
             if sample:
                 agent_idx = torch.distributions.Categorical(ag_policy_temp).sample()
-                action = torch.distributions.Categorical(joint_policy_temp[agent_idx]).sample()
+                selected_ag_policy = joint_policy_temp[torch.arange(bs), agent_idx]
+                # action = torch.distributions.Categorical(joint_policy_temp[agent_idx]).sample()
+                action = torch.distributions.Categorical(selected_ag_policy).sample()
             else:
                 agent_idx = ag_policy_temp.argmax()
                 action = joint_policy_temp[agent_idx].argmax()
 
-            selected_ag.append(agent_idx.item())
-            out_action.append(action.item())
+            if bs > 1:
+                selected_ag.append(agent_idx.tolist())
+                out_action.append(action.tolist())
+            else:
+                selected_ag.append(agent_idx.item())
+                out_action.append(action.item())
+
+            ag_policy_temp[torch.arange(agent_idx.shape[-1]), agent_idx] = 0
+            joint_policy_temp[torch.arange(bs), :, action] = 0
 
             # ag_policy_temp[:, agent_idx] = 0
-            # joint_policy_temp[:, :, out_action] = 0
-            ag_policy_temp[:, agent_idx] = 0
-            joint_policy_temp[:, out_action] = 0
+            # joint_policy_temp[:, action]
 
         return selected_ag, out_action
 

@@ -73,10 +73,15 @@ for e in range(10000):
         selected_ag_idx, joint_action = agent(g_batch, bipartite_g_batch, task_finished_bef, ag_node_indices_batch,
                                               task_node_indices_batch)
 
-        # DEBUG ongoing
-        curr_tasks_solver = []
-        agent_pos_solver = []
+        agent_pos_solver_batch = [[] * n_batch]
+        curr_tasks_solver_batch = [[] * n_batch]
         # convert action to solver format
+
+        for b in range(n_batch):
+            for _ in range(N):
+                # DEBUG ongoing
+                pass
+
         for ag_idx, action in zip(selected_ag_idx, joint_action):
             task_node_idx = task_node_indices[action]
             # convert action to solver format (task pos)
