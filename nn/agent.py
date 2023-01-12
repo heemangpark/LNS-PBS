@@ -43,7 +43,7 @@ class Agent(nn.Module):
         selected_ag = []
         out_action = []
 
-        n_task = joint_policy_temp.shape[-1]
+        n_task = (~task_finished).reshape(bs, -1).sum(-1).max(-1)
         for itr in range(min(n_ag, n_task)):
             if sample:
                 agent_idx = torch.distributions.Categorical(ag_policy_temp).sample()
@@ -51,8 +51,8 @@ class Agent(nn.Module):
                 # action = torch.distributions.Categorical(joint_policy_temp[agent_idx]).sample()
                 action = torch.distributions.Categorical(selected_ag_policy).sample()
             else:
-                agent_idx = ag_policy_temp.argmax()
-                action = joint_policy_temp[agent_idx].argmax()
+                agent_idx = ag_policy_temp.argmax(-1)
+                action = joint_policy_temp[:, agent_idx].argmax(-1)
 
             if bs > 1:
                 selected_ag.append(agent_idx.tolist())
