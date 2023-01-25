@@ -128,8 +128,8 @@ for e in range(10000):
         # Replay memory 에 transition 저장. Agent position 을 graph 의 node 형태로
         terminated = all(task_finished_aft)
 
-        # TODO
-        agent.push(g, ag_node_indices, task_node_indices, None, joint_action,
+        # TODO: training detail
+        agent.push(g, ag_node_indices, task_node_indices, joint_action, ag_order,
                    deepcopy(task_finished_bef), next_t, terminated)
 
         if VISUALIZE:
@@ -137,11 +137,13 @@ for e in range(10000):
 
         if terminated:
             avg_return.append(episode_timestep)
-            # torch.save(agent.state_dict(), 'saved/{}.th'.format(exp_name))
-            # fit_res = agent.fit(baseline=sum(avg_return) / len(avg_return))
-            # print('E:{}, loss:{:.5f}, return:{}'.format(e, fit_res['loss'], episode_timestep))
-            # wandb.log({'loss': fit_res['loss'], 'return': episode_timestep})
+            torch.save(agent.state_dict(), 'saved/{}.th'.format(exp_name))
+            fit_res = agent.fit(baseline=sum(avg_return) / len(avg_return))
+            print('E:{}, loss:{:.5f}, return:{}'.format(e, fit_res['loss'], episode_timestep))
+            wandb.log({'loss': fit_res['loss'], 'return': episode_timestep})
             break
+
+        # TODO: small T agent continue
 
         task_finished_bef = task_finished_aft
         g, ag_node_indices, _ = convert_dgl(graph, agent_pos, total_tasks, task_finished_bef)

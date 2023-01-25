@@ -55,14 +55,13 @@ class Agent(nn.Module):
 
         return out_action
 
-    def get_policy(self, g, bipartite_g, task_finished, ag_node_indices, task_node_indices):
+    def get_policy(self, g):
         feature = self.generate_feature(g)  # one-hot encoded feature 'type'
         nf = self.embedding(feature)
         out_nf = self.gnn(g, nf)
-        joint_policy, ag_policy = self.bipartite_policy(g, bipartite_g, out_nf, ag_node_indices, task_node_indices,
-                                                        task_finished)
+        policy = self.bipartite_policy(g, out_nf)
 
-        return joint_policy, ag_policy
+        return policy
 
     def generate_feature(self, g):
         # feature = torch.eye(3)[g.ndata['type']]
@@ -77,15 +76,13 @@ class Agent(nn.Module):
     def fit(self, baseline=0):
         # if len(self.replay_memory) < self.replay_memory.batch_size:
         #     return {'loss': 0}
+        gs, ag_node_indices, task_node_indices, ag_order, joint_action, task_finished, next_t, terminated = self.replay_memory.episode_sample()
 
-        di_dgl_g, bipartite_g, ag_node_indices, task_node_indices, selected_ag_idx, joint_action, task_finished, next_t, terminated = self.replay_memory.episode_sample()
-
-        g_size = torch.tensor([g.number_of_nodes() for g in di_dgl_g])
+        g_size = torch.tensor([g.number_of_nodes() for g in gs])
         cumsum_g_size = torch.cumsum(g_size, 0) - g_size[0]
 
         # graph structured transition
-        di_dgl_g = dgl.batch(di_dgl_g)
-        bipartite_g = dgl.batch(bipartite_g)
+        gs = dgl.batch(gs)
 
         ag_node_indices = torch.tensor(ag_node_indices)
         task_node_indices = torch.tensor(task_node_indices)
@@ -99,10 +96,10 @@ class Agent(nn.Module):
         task_finished = torch.tensor(task_finished).reshape(-1)
 
         next_t = torch.tensor(next_t)
-        terminated = torch.Tensor(terminated)
 
-        joint_policy, ag_policy = self.get_policy(di_dgl_g, bipartite_g, task_finished, ag_node_indices,
-                                                  task_node_indices)
+        policy = self.get_policy(gs)
+
+        # TODO:WIP
 
         n_ag = ag_policy.shape[-1]
         selected_ag_idx = [torch.tensor(s) + i * n_ag for i, s in enumerate(selected_ag_idx)]
