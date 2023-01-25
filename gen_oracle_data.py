@@ -1,6 +1,6 @@
 import pickle
 
-from LNS.hungarian import hungarian
+from LNS.hungarian import HA
 from LNS.regret import f_ijk, get_regret
 from LNS.shaw import removal
 from utils.generate_scenarios import save_scenarios, load_scenarios
@@ -13,7 +13,7 @@ save_scenarios(itr=1000)
 for idx in list(range(1, 1001)):
     scenario = load_scenarios('323220_1_10_10/scenario_{}.pkl'.format(idx))
     grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
-    task_idx, tasks = hungarian(graph, agent_pos, total_tasks)
+    task_idx, tasks = HA(graph, agent_pos, total_tasks)
 
     for _ in range(500):  # 10 10 setting 500 itrs might be enough / not sure :(
         removal_idx = removal(task_idx, total_tasks, graph)

@@ -1,18 +1,15 @@
 import os
 import subprocess
 from copy import deepcopy
-from collections import deque
-
-import torch
-
-from utils.vis_graph import vis_ta
 
 import numpy as np
+import torch
 
 from nn.ag_util import convert_dgl
 from nn.agent import Agent
 from utils.generate_scenarios import load_scenarios, save_scenarios
 from utils.solver_util import save_map, save_scenario, read_trajectory
+from utils.vis_graph import vis_ta
 
 VISUALIZE = True
 solver_path = "EECBS/"

@@ -69,8 +69,7 @@ class Bipartite(nn.Module):
         super(Bipartite, self).__init__()
         self.embedding_dim = embedding_dim
         self.attention_fc = nn.Sequential(nn.Linear(2 * embedding_dim, 1, bias=False),
-                                          nn.LeakyReLU()
-                                          )
+                                          nn.LeakyReLU())
 
         self.ag_score = nn.Sequential(nn.Linear(embedding_dim, 1, bias=False), nn.LeakyReLU())
 

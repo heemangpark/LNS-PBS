@@ -143,10 +143,10 @@ for e in range(10000):
 
         if terminated:
             avg_return.append(episode_timestep)
-            torch.save(agent.state_dict(), 'saved/saved_1e4.th')
+            # torch.save(agent.state_dict(), 'saved/saved_1e4.th')
             fit_res = agent.fit(baseline=sum(avg_return) / len(avg_return))
             print('E:{}, loss:{:.5f}, return:{}'.format(e, fit_res['loss'], episode_timestep))
-            wandb.log({'loss': fit_res['loss'], 'return': episode_timestep})
+            # wandb.log({'loss': fit_res['loss'], 'return': episode_timestep})
             break
 
         task_finished_bef = task_finished_aft

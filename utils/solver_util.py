@@ -1,8 +1,14 @@
+import os
+from pathlib import Path
+
 import numpy as np
+
+curr_path = os.path.realpath(__file__)
+save_dir = os.path.join(Path(curr_path).parent.parent, 'EECBS/')
 
 
 def save_map(grid, filename):
-    f = open('EECBS/{}.map'.format(filename), 'w')
+    f = open(save_dir + '{}.map'.format(filename), 'w')
     f.write('type four-directional\n')
     f.write('height {}\n'.format(grid.shape[0]))
     f.write('width {}\n'.format(grid.shape[1]))
@@ -21,11 +27,11 @@ def save_map(grid, filename):
 
 
 def save_scenario(agent_pos, total_tasks, scenario_name, row, column):
-    f = open('EECBS/{}.scen'.format(scenario_name), 'w')
+    f = open(save_dir + '{}.scen'.format(scenario_name), 'w')
     f.write('version 1\n')
     for a, t in zip(agent_pos, total_tasks):
         task = t[0]  # TODO:add task seq
-        dist = abs(np.array(a) - np.array(t)).sum()  # Manhatten dist
+        dist = abs(np.array(a) - np.array(t)).sum()  # Manhattan dist
         line = '1 \t{} \t{} \t{} \t{} \t{} \t{} \t{} \t{}'.format('{}.map'.format(scenario_name), row, column, a[1],
                                                                   a[0], task[1], task[0], dist)
         f.write(line + "\n")

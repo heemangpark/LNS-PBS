@@ -2,23 +2,27 @@ import random
 
 import matplotlib.pyplot as plt
 
-from LNS.hungarian import hungarian
+from LNS.hungarian import HA
 from LNS.regret import f_ijk, get_regret
 from LNS.shaw import removal
 from utils.generate_scenarios import load_scenarios
-from utils.soc_ms import costa
+from utils.soc_ms import cost
 
 
-def test_lns(lns_step, exp_repeat, N):
+def test_lns(exp_repeat, lns_step, N):
     random.seed(3298)
-    scenario = load_scenarios('323220_1_10_10/scenario_1.pkl')
+    # map_seed = random.randint(1, 501)
+    # scen_seed = random.randint(1, 11)
+    map_seed = 1
+    scen_seed = 1
+    scenario = load_scenarios('323220_1_10_20_{}/scenario_{}.pkl'.format(map_seed, scen_seed))
     grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
 
-    for oi in range(exp_repeat):
+    for _ in range(exp_repeat):
         soc_list, ms_list = list(), list()
-        task_idx, tasks = hungarian(graph, agent_pos, total_tasks)
+        task_idx, tasks = HA(graph, agent_pos, total_tasks)
 
-        for ii in range(lns_step):
+        for _ in range(lns_step):
             removal_idx = removal(task_idx, total_tasks, graph, N=N)
             for i, t in enumerate(tasks.values()):
                 for r in removal_idx:
@@ -45,6 +49,4 @@ def test_lns(lns_step, exp_repeat, N):
 
 
 if __name__ == "__main__":
-    for nn in range(10):
-        print(nn)
-        test_lns(in_itr=20, out_itr=10, N=nn)
+    test_lns(10, 50, 5)

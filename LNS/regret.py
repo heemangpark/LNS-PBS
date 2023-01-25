@@ -26,7 +26,6 @@ def f_ijk(current_tasks, agent_pos, removal_idx, total_tasks, graph):
             for j in range(len(ats) + 1):
                 temp = deepcopy(ats)
                 temp.insert(j, {i: rt})
-                # cost via A* after re-insertion i, j, k
                 path = list()
                 for a in temp:
                     for b in a.values():

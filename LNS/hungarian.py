@@ -13,7 +13,7 @@ def cost_matrix(g, a, t):
     return m
 
 
-def hungarian(graph, agent_pos, tasks):
+def HA(graph, agent_pos, tasks):
     cm = cost_matrix(graph, agent_pos, tasks)
     ag, assigned = linear_sum_assignment(cm)
     task_idx = dict(zip(ag, assigned))
