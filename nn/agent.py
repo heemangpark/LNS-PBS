@@ -8,7 +8,7 @@ from nn.memory import ReplayMemory
 
 
 class Agent(nn.Module):
-    def __init__(self, embedding_dim=128, memory_size=50000, batch_size=100, gnn_layers=3):
+    def __init__(self, embedding_dim=128, memory_size=50000, batch_size=100, gnn_layers=1):
         super(Agent, self).__init__()
         self.embedding_dim = embedding_dim
 
@@ -21,19 +21,14 @@ class Agent(nn.Module):
 
         self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-4)
 
-    def forward(self, g, bipartite_g, task_finished, ag_node_indices, task_node_indices, sample=True):
+    def forward(self, g, sample=True):
         bs = g.batch_size
-        if type(ag_node_indices) != list:
-            ag_node_indices = ag_node_indices.view().reshape(-1)
-            task_node_indices = task_node_indices.view().reshape(-1)
-            task_finished = task_finished.view().reshape(-1)
-
         feature = self.generate_feature(g)  # one-hot encoded feature 'type'
-        nf = self.embedding(feature)
-        out_nf = self.gnn(g, nf)
 
-        joint_policy, ag_policy = self.bipartite_policy(g, bipartite_g, out_nf, ag_node_indices, task_node_indices,
-                                                        task_finished)
+        embeddings = self.embedding(feature)
+        out_nf = self.gnn(g, embeddings)
+
+        policy = self.bipartite_policy(g, out_nf)
 
         n_ag = ag_policy.shape[-1]
 
@@ -81,6 +76,10 @@ class Agent(nn.Module):
     def generate_feature(self, g):
         feature = torch.eye(3)[g.ndata['type']]
         feature = torch.cat([feature, g.ndata['loc']], -1)
+
+        if 'dist' not in g.edata.keys():
+            g.apply_edges(lambda edges: {'dist': (abs(edges.src['loc'] - edges.dst['loc'])).sum(-1)})
+
         return feature
 
     def fit(self, baseline=0):

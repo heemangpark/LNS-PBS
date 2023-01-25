@@ -16,11 +16,10 @@ from utils.vis_graph import vis_ta
 
 exp_name = datetime.now().strftime("%Y%m%d_%H%M")
 scenario_name = exp_name
-wandb.init(project='etri-mapf', entity='curie_ahn', name=exp_name)
 
 VISUALIZE = False
 solver_path = "EECBS/"
-M, N = 10, 30
+M, N = 9, 13
 if not os.path.exists('scenarios/323220_1_{}_{}/'.format(M, N)):
     save_scenarios(size=32, M=M, N=N)
 
@@ -45,8 +44,7 @@ for e in range(10000):
     agent_traj = []
     # `task_finished` defined for each episode
     task_finished_bef = np.array([False for _ in range(N)])
-    di_dgl_g, bipartite_g, ag_node_indices, task_node_indices = convert_dgl(graph, agent_pos, total_tasks, agent_traj,
-                                                                            task_finished_bef)
+    g, ag_node_indices, task_node_indices = convert_dgl(graph, agent_pos, total_tasks, task_finished_bef)
     joint_action = []
 
     while True:
@@ -55,18 +53,16 @@ for e in range(10000):
         task_selected = deepcopy(task_finished_bef)
         curr_tasks_solver = []
         agent_pos_solver = []
-        selected_ag_idx, joint_action = agent(di_dgl_g, bipartite_g, task_finished_bef, ag_node_indices,
-                                              task_node_indices)
+        selected_ag_idx, joint_action = agent(g)
 
         # convert action to solver format
         for ag_idx, action in zip(selected_ag_idx, joint_action):
             task_node_idx = task_node_indices[action]
             # convert action to solver format (task pos)
-            _x = di_dgl_g.nodes[task_node_idx].data['x'].item()
-            _y = di_dgl_g.nodes[task_node_idx].data['y'].item()
+            original_loc = g.nodes[task_node_idx].data['original_loc'].item()
 
             agent_pos_solver.append(agent_pos[ag_idx])
-            curr_tasks_solver.append([[_x, _y]])
+            curr_tasks_solver.append([original_loc])
 
         # non-selected agents
         for ag_idx in set(range(M)) - set(selected_ag_idx):

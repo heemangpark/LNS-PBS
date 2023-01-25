@@ -5,6 +5,7 @@ from math import inf
 
 AG_type = 1
 TASK_type = 2
+FIN_TASK_type = 3
 
 
 class GNN(nn.Module):
@@ -50,7 +51,7 @@ class GNNLayer(nn.Module):
         return out_nf
 
     def message_func(self, edges):
-        ef = torch.concat([edges.src['nf'], edges.dst['nf'], edges.data['traj'].view(-1, 1)], -1)
+        ef = torch.concat([edges.src['nf'], edges.dst['nf'], edges.data['dist'].view(-1, 1)], -1)
         msg = self.edge_embedding(ef)
         return {'msg': msg}
 
@@ -83,7 +84,18 @@ class Bipartite(nn.Module):
     Assume ag_size and task_size does not vary within batch
     """
 
-    def forward(self, g: dgl.DGLGraph, bipartite_g: dgl.DGLGraph, nf, ag_node_indices, task_node_indices, task_finished):
+    def forward(self, g: dgl.DGLGraph, nf):
+        g.ndata['nf'] = nf
+
+        ag_node_indices = g.filter_nodes(ag_node_func)
+        g.ndata['finished'] = g.ndata['type'] == FIN_TASK_type
+        g.update_all(message_func=self.message, reduce_func=self.reduce, apply_node_func=self.apply_node)
+
+        policy = g.ndata.pop('policy')[ag_node_indices]
+        return policy
+
+    def forward_prev(self, g: dgl.DGLGraph, bipartite_g: dgl.DGLGraph, nf, ag_node_indices, task_node_indices,
+                     task_finished):
         n_batch = g.batch_size
         g.ndata['nf'] = nf
 
@@ -143,3 +155,7 @@ def ag_node_func(nodes):
 
 def task_node_func(nodes):
     return nodes.data['type'] == TASK_type  # .squeeze(1)
+
+
+def all_task_node_func(nodes):
+    return nodes.data['type'] == TASK_type or nodes.data['type'] == FIN_TASK_type  # .squeeze(1)
