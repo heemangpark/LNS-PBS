@@ -39,7 +39,7 @@ def graph_astar(g, start, end):
         closepath.append(current_node)
         for new_idx in g.neighbors(current_node.idx):
             node = Node(current_node, new_idx)
-            node.g = current_node.g + g.edges[current_node.idx, node.idx]['dist'].item()
+            node.g = current_node.g + 1
             node.h = abs(np.array(g.nodes[node.idx]['loc']) - np.array(g.nodes[end_node.idx]['loc'])).sum().item()
             node.f = node.g + node.h
 
@@ -52,7 +52,7 @@ def graph_astar(g, start, end):
                     current = current.parent
                 path = path[::-1]
                 for p in range(len(path) - 1):
-                    path_cost += g.edges[path[p], path[p + 1]]['dist'].item()
+                    path_cost += 1
                 return path, path_cost  # Return reversed path
             else:
                 duplicated = openpath.get(node.idx)

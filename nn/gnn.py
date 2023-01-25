@@ -42,9 +42,11 @@ class GNNLayer(nn.Module):
 
     def forward(self, g: dgl.DGLGraph, nf):
         g.ndata['nf'] = nf
-        g.update_all(message_func=self.message_func,
-                     reduce_func=self.reduce_func,
-                     apply_node_func=self.apply_node_func)
+        task_node_idx = g.filter_nodes(task_node_func)
+        g.push(u=task_node_idx,
+               message_func=self.message_func,
+               reduce_func=self.reduce_func,
+               apply_node_func=self.apply_node_func)
 
         out_nf = g.ndata.pop('out_nf')
         g.ndata.pop('nf')

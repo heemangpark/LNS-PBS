@@ -12,7 +12,7 @@ class Agent(nn.Module):
         super(Agent, self).__init__()
         self.embedding_dim = embedding_dim
 
-        self.embedding = nn.Linear(5, embedding_dim)
+        self.embedding = nn.Linear(2, embedding_dim)
         self.gnn = GNN(in_dim=embedding_dim, out_dim=embedding_dim, embedding_dim=embedding_dim, n_layers=gnn_layers,
                        residual=True)
         self.bipartite_policy = Bipartite(embedding_dim)
@@ -21,33 +21,28 @@ class Agent(nn.Module):
 
         self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-4)
 
-    def forward(self, g, sample=True):
+    def forward(self, g, ag_order, sample=True):
         bs = g.batch_size
+        n_ag = ag_order.shape[-1]
         feature = self.generate_feature(g)  # one-hot encoded feature 'type'
 
         embeddings = self.embedding(feature)
         out_nf = self.gnn(g, embeddings)
-
         policy = self.bipartite_policy(g, out_nf)
 
-        n_ag = ag_policy.shape[-1]
-
-        joint_policy_temp = joint_policy.clone().reshape(bs, n_ag, -1)
-        ag_policy_temp = ag_policy.clone()
-
+        policy_temp = policy.clone().reshape(bs, n_ag, -1)
         selected_ag = []
         out_action = []
+        for itr in range(n_ag):
+            policy_temp[:, :, -1] = 1e-5  # dummy node
+            agent_idx = ag_order[:, itr]
+            # TODO: normalize prob
 
-        n_task = (~task_finished).reshape(bs, -1).sum(-1).max(-1)
-        for itr in range(min(n_ag, n_task)):
             if sample:
-                agent_idx = torch.distributions.Categorical(ag_policy_temp).sample()
-                selected_ag_policy = joint_policy_temp[torch.arange(bs), agent_idx]
-                # action = torch.distributions.Categorical(joint_policy_temp[agent_idx]).sample()
+                selected_ag_policy = policy_temp[torch.arange(bs), agent_idx]
                 action = torch.distributions.Categorical(selected_ag_policy).sample()
             else:
-                agent_idx = ag_policy_temp.argmax(-1)
-                action = joint_policy_temp[:, agent_idx].argmax(-1)
+                action = policy_temp[:, agent_idx].argmax(-1)
 
             if bs > 1:
                 selected_ag.append(agent_idx.tolist())
@@ -56,13 +51,9 @@ class Agent(nn.Module):
                 selected_ag.append(agent_idx.item())
                 out_action.append(action.item())
 
-            ag_policy_temp[torch.arange(agent_idx.shape[-1]), agent_idx] = 0
-            joint_policy_temp[torch.arange(bs), :, action] = 0
+            policy_temp[torch.arange(bs), :, action] = 0
 
-            # ag_policy_temp[:, agent_idx] = 0
-            # joint_policy_temp[:, action]
-
-        return selected_ag, out_action
+        return out_action
 
     def get_policy(self, g, bipartite_g, task_finished, ag_node_indices, task_node_indices):
         feature = self.generate_feature(g)  # one-hot encoded feature 'type'
@@ -74,8 +65,9 @@ class Agent(nn.Module):
         return joint_policy, ag_policy
 
     def generate_feature(self, g):
-        feature = torch.eye(3)[g.ndata['type']]
-        feature = torch.cat([feature, g.ndata['loc']], -1)
+        # feature = torch.eye(3)[g.ndata['type']]
+        # feature = torch.cat([feature, g.ndata['loc']], -1)
+        feature = g.ndata['loc']
 
         if 'dist' not in g.edata.keys():
             g.apply_edges(lambda edges: {'dist': (abs(edges.src['loc'] - edges.dst['loc'])).sum(-1)})

@@ -34,7 +34,7 @@ def convert_dgl(nx_g, agent_pos, task_pos, task_finished=[]):
         task_node_indices.append(node_idx_dict[tuple(task[0])])
 
     node_indices = ag_node_indices + task_node_indices
-    all_locs = torch.Tensor(list(di_nx_g.nodes()))
+    all_locs = torch.tensor(list(di_nx_g.nodes()))
     norm_locs = all_locs / all_locs.max()
 
     # option 1. Astar cost (느림)
@@ -62,6 +62,9 @@ def convert_dgl(nx_g, agent_pos, task_pos, task_finished=[]):
     bipartite_g.ndata['original_loc'] = all_locs[node_indices]
     bipartite_g.apply_edges(
         lambda edges: {'dist': (abs(edges.src['loc'] - edges.dst['loc'])).sum(-1)})
+
+    # add dummy task
+    bipartite_g.add_edges([n_ag + n_task] * n_ag, range(n_ag))
 
     return bipartite_g, ag_node_indices, task_node_indices
 
