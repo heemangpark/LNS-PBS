@@ -71,4 +71,4 @@ def load_scenarios(dir):
 
 
 if __name__ == "__main__":
-    save_scenarios(itr=1000, size=10, M=10, N=40)
+    save_scenarios(itr=10000, size=20, M=10, N=50)

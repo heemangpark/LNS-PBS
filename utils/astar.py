@@ -20,6 +20,7 @@ class Node:
 
 
 def graph_astar(g, start, end):
+    np.random.seed(42)
     start = tuple(start)
     end = tuple(end)
     path = list()

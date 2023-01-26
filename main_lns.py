@@ -1,11 +1,10 @@
 import time
 
-from LNS.hungarian import HA
 from LNS.regret import f_ijk, get_regret
 from LNS.shaw import removal
 from seq_solver import seq_solver
 from utils.convert import to_solver
-from utils.generate_scenarios import load_scenarios
+
 
 # "Create random scenarios and load one of them"
 # # save_scenarios(C=1, M=20, N=50)
@@ -52,15 +51,16 @@ from utils.generate_scenarios import load_scenarios
 
 
 def LNS(info):
-    task_idx, assign = HA(info['graph'], info['agents'], info['tasks'])
-    h_cost, paths = seq_solver(info['grid'], info['agents'], to_solver(info['tasks'], assign), {'time_limit': 1, 'sub_op': 1.1})
-    if h_cost == 'shutdown_c':
+    task_idx, assign = info['assign'][0], info['assign'][1]
+    h_cost, paths = seq_solver(info['grid'], info['agents'], to_solver(info['tasks'], assign),
+                               {'time_limit': 1, 'sub_op': 1.1})
+    if h_cost == 'error':
         return 'NaN'
-    "2nd step: Large Neighborhood Search (iteratively)"
-    max_t = time.time() + 5
-    itr = 0
-    while True:
-        lns_time = time.time()
+    # max_t = time.time() + 5
+    itr, max_itr = 0, 10
+    # while True:
+    while itr < max_itr:
+        # lns_time = time.time()
         removal_idx = removal(task_idx, info['tasks'], info['graph'], N=2)
         for i, t in enumerate(assign.values()):
             for r in removal_idx:
@@ -75,12 +75,13 @@ def LNS(info):
             removal_idx.remove(re_ins)
             to_insert = {re_ins: info['tasks'][re_ins]}
             assign[re_a].insert(re_j, to_insert)
-        lns_time = time.time() - lns_time
-        if time.time() > max_t:
-            break
+        # lns_time = time.time() - lns_time
+        # if time.time() > max_t:
+        #     break
         itr += 1
-        cost, paths = seq_solver(info['grid'], info['agents'], to_solver(info['tasks'], assign), {'time_limit': 1, 'sub_op': 1.1})
-        if cost == 'shutdown_c':
+        cost, paths = seq_solver(info['grid'], info['agents'], to_solver(info['tasks'], assign),
+                                 {'time_limit': 1, 'sub_op': 1.1})
+        if cost == 'error':
             return 'NaN'
 
     return (h_cost - cost) / h_cost * 100

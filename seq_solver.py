@@ -44,7 +44,7 @@ def seq_solver(instance, agents, tasks, solver_params):
         process_out = subprocess.run(c, capture_output=True)
         text_byte = process_out.stdout.decode('utf-8')
         if text_byte[37:44] != 'Succeed':
-            return 'shutdown_c', 'shutdown_p'
+            return 'error', 'error'
 
         traj = read_trajectory(solver_dir + name + "_paths_{}.txt".format(itr))
         len_traj = [len(t) - 1 for t in traj]
