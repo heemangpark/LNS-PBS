@@ -6,6 +6,8 @@ import networkx as nx
 
 curr_path = os.path.realpath(__file__)
 fig_dir = os.path.join(Path(curr_path).parent.parent, 'fig')
+gray = (0.5019607843137255, 0.5019607843137255, 0.5019607843137255)
+black = (0.1, 0.1, 0.1)
 
 
 def vis_graph(graph):
@@ -47,7 +49,6 @@ def vis_ta(graph, agents, tasks, itr, total_tasks=None, task_finished=None):
     pos = dict()
     for i in range(len(graph)):
         pos[list(graph.nodes)[i]] = graph.nodes[list(graph.nodes)[i]]['loc']
-    task_nodes = list()
     colors = [plt.cm.get_cmap('rainbow')(i / len(agents)) for i in range(len(agents))]
 
     labeldict = dict()
@@ -60,26 +61,32 @@ def vis_ta(graph, agents, tasks, itr, total_tasks=None, task_finished=None):
             temp_tasks[i] = [{0: t}]
         tasks = temp_tasks
 
+    task_color_dict = dict()
+    if total_tasks is not None:
+        for t, finished in zip(total_tasks, task_finished):
+            if finished:
+                task_color_dict[tuple(t[0])] = gray
+            else:
+                task_color_dict[tuple(t[0])] = black
+
+        # nx.draw(graph, pos=pos, nodelist=task_nodes, node_size=100, node_shape='X', node_color='gray')
+
     for ag_idx, task in tasks.items():
         for t in task:
             for _t in t.values():
                 labeldict[tuple(_t[0])] = ag_idx
-                task_nodes.append(tuple(_t[0]))
+                task_color_dict[tuple(_t[0])] = colors[ag_idx]
 
     # t_colors = list()
     # for c, t in enumerate(tasks.values()):
     #     t_colors += [colors[c] for _ in range(len(t))]
     #     for _t in t:
     #         task_nodes.append(tuple(list(_t.values())[0][0]))
-    if total_tasks is not None:
-        total_task = []
-        for t, finished in zip(total_tasks, task_finished):
-            if not finished:
-                total_task.append(tuple(t[0]))
-        nx.draw(graph, pos=pos, nodelist=total_task, node_size=100, node_shape='X', node_color='gray')
+    task_node_list = list(task_color_dict.keys())
+    node_color_list = list(task_color_dict.values())
 
+    nx.draw(graph, pos=pos, nodelist=task_node_list, node_size=100, node_shape='X', node_color=node_color_list)
     nx.draw(graph, pos=pos, nodelist=[tuple(a) for a in agents], node_size=100, node_color=colors)
-    nx.draw(graph, pos=pos, nodelist=task_nodes, node_size=100, node_shape='X', node_color=colors)
     nx.draw_networkx_labels(graph, pos, labeldict)
 
     try:

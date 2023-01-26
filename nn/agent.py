@@ -44,6 +44,8 @@ class Agent(nn.Module):
             else:
                 action = policy_temp[:, agent_idx].argmax(-1)
 
+            action[bool(continuing_ag[agent_idx])] = joint_action_prev[agent_idx].item()
+
             if bs > 1:
                 selected_ag.append(agent_idx.tolist())
                 out_action.append(action.tolist())

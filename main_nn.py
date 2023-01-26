@@ -1,13 +1,13 @@
 import os
 import subprocess
+import random
+import torch
+import wandb
+import numpy as np
+
 from collections import deque
 from copy import deepcopy
 from datetime import datetime
-
-import numpy as np
-import torch
-import wandb
-
 from nn.ag_util import convert_dgl
 from nn.agent import Agent
 from utils.generate_scenarios import load_scenarios, save_scenarios
@@ -17,9 +17,9 @@ from utils.vis_graph import vis_ta
 exp_name = datetime.now().strftime("%Y%m%d_%H%M")
 scenario_name = exp_name
 
-VISUALIZE = False
+VISUALIZE = True
 solver_path = "EECBS/"
-M, N = 9, 5
+M, N = 10, 20
 T_threshold = 10  # N step fwd
 if not os.path.exists('scenarios/323220_1_{}_{}/'.format(M, N)):
     save_scenarios(size=32, M=M, N=N)
@@ -40,7 +40,7 @@ for e in range(10000):
     # `task_finished` defined for each episode
     task_finished_bef = np.array([False for _ in range(N)])
     g, ag_node_indices, task_node_indices = convert_dgl(graph, agent_pos, total_tasks, task_finished_bef)
-    joint_action_prev = []
+    joint_action_prev = np.array([0] * M)
     ag_order = np.arange(M).reshape(1, -1)
     continuing_ag = np.array([False for _ in range(M)])
 
@@ -49,9 +49,10 @@ for e in range(10000):
         """ 1.super-agent coordinates agent&task pairs """
         # `task_selected` initialized as the `task_finished` to jointly select task at each event
         task_selected = deepcopy(task_finished_bef)
-        agent_pos_solver = []
-        curr_tasks_solver = []
+        curr_tasks = [[] for _ in range(M)]  # in order of init agent idx
         joint_action = agent(g, ag_order, continuing_ag, joint_action_prev)
+        # ordered_joint_action = np.empty(shape=(M,), dtype=int)
+        ordered_joint_action = [0] * M
 
         # convert action to solver format
         # TODO: batch
@@ -63,16 +64,17 @@ for e in range(10000):
             else:
                 task_loc = agent_pos[ag_idx].tolist()
 
-            agent_pos_solver.append(agent_pos[ag_idx])
-            curr_tasks_solver.append([task_loc])
+            curr_tasks[ag_idx] = [task_loc]
+            ordered_joint_action[ag_idx] = action
 
         # visualize
         if VISUALIZE:
-            vis_ta(graph, agent_pos_solver, curr_tasks_solver, str(itr) + "_assigned")
+            vis_ta(graph, agent_pos, curr_tasks, str(itr) + "_assigned", total_tasks=total_tasks,
+                   task_finished=task_finished_bef)
 
         """ 2.pass created agent-task pairs to low level solver """
         # convert action to the solver input formation
-        save_scenario(agent_pos_solver, curr_tasks_solver, scenario_name, grid.shape[0], grid.shape[1])
+        save_scenario(agent_pos, curr_tasks, scenario_name, grid.shape[0], grid.shape[1])
 
         # Run solver
         c = [solver_path + "eecbs",
@@ -84,7 +86,7 @@ for e in range(10000):
              solver_path + scenario_name + ".csv",
              "--outputPaths",
              solver_path + scenario_name + "_paths.txt",
-             "-k", "{}".format(len(agent_pos_solver)), "-t", "1", "--suboptimality=1.1"]
+             "-k", str(M), "-t", "1", "--suboptimality=1.1"]
 
         # process_out.stdout format
         # runtime, num_restarts, num_expanded, num_generated, solution_cost, min_sum_of_costs, avg_path_length
@@ -107,27 +109,28 @@ for e in range(10000):
         next_t = T[T > 1].min()
 
         finished_ag = T == next_t  # as more than one agent may finish at a time
-        finished_task_idx = np.array(joint_action)[finished_ag]
+        finished_task_idx = np.array(ordered_joint_action)[finished_ag]
         task_finished_aft = deepcopy(task_finished_bef)
         task_finished_aft[finished_task_idx] = True
         episode_timestep += next_t
 
         # overwrite output
         agent_pos_new = deepcopy(agent_pos)
-        for i, ag in enumerate(ag_order[0]):
-            if T[i] > 1:
-                agent_pos_new[ag] = agent_traj[i][next_t - 1]
+        for ag_idx in ag_order[0]:
+            if T[ag_idx] > 1:
+                agent_pos_new[ag_idx] = agent_traj[ag_idx][next_t - 1]
 
         agent_pos = agent_pos_new
         # Replay memory 에 transition 저장. Agent position 을 graph 의 node 형태로
         terminated = all(task_finished_aft)
 
         # TODO: training detail
-        agent.push(g, ag_node_indices, task_node_indices, joint_action, ag_order,
+        agent.push(g, ag_node_indices, task_node_indices, ordered_joint_action, ag_order,
                    deepcopy(task_finished_bef), next_t, terminated)
 
         if VISUALIZE:
-            vis_ta(graph, agent_pos[ag_order], curr_tasks_solver, str(itr) + "_finished")
+            vis_ta(graph, agent_pos, curr_tasks, str(itr) + "_finished", total_tasks=total_tasks,
+                   task_finished=task_finished_aft)
 
         if terminated:
             avg_return.append(episode_timestep)
@@ -137,18 +140,14 @@ for e in range(10000):
             wandb.log({'loss': fit_res['loss'], 'return': episode_timestep})
             break
 
-        # joint action in order
-        joint_action_ordered = np.empty_like(joint_action)
-        joint_action_ordered[ag_order[0]] = joint_action
-
         # agent with small T maintains previous action
         continuing_ag = (0 < T - next_t) * (T - next_t < T_threshold)
         continuing_ag_idx = continuing_ag.nonzero()[0].tolist()
-        finished_ag_idx = finished_ag.nonzero()[0].tolist()
-        remaining_ag = set(range(M)) - set(continuing_ag_idx + finished_ag_idx)
+        remaining_ag = list(set(range(M)) - set(continuing_ag_idx))
+        random.shuffle(remaining_ag)
 
-        ag_order = np.array([continuing_ag_idx + finished_ag_idx + list(remaining_ag)])
-        joint_action_prev = joint_action_ordered[ag_order[0]]
+        ag_order = np.array([continuing_ag_idx + remaining_ag])
+        joint_action_prev = np.array(ordered_joint_action, dtype=int)
 
         task_finished_bef = task_finished_aft
         g, ag_node_indices, _ = convert_dgl(graph, agent_pos, total_tasks, task_finished_bef)
