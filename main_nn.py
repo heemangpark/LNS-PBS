@@ -9,20 +9,16 @@ from copy import deepcopy
 from datetime import datetime
 from nn.ag_util import convert_dgl
 from nn.agent import Agent
-from utils.generate_scenarios import load_scenarios, save_scenarios
+from utils.generate_scenarios import load_scenarios
 from utils.solver_util import save_map, save_scenario, read_trajectory
 from utils.vis_graph import vis_ta
 
-VISUALIZE = False
+VISUALIZE = True
 solver_path = "EECBS/"
 
 
-def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario=None):
-    if scenario is None:
-        save_scenarios(size=32, M=M, N=N)
-        scenario = load_scenarios('323220_1_{}_{}/scenario_1.pkl'.format(M, N))
-    else:
-        scenario = scenario
+def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=None):
+    scenario = load_scenarios(scenario_dir)
     grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
     save_map(grid, exp_name)
 
@@ -139,37 +135,40 @@ def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario=None):
 
 
 if __name__ == '__main__':
+    from tqdm import tqdm
 
+    epoch = 1000
+    sample_per_epoch = 50
     M, N = 10, 20
     T_threshold = 10  # N step fwd
-    agent = Agent(batch_size=3)
-    avg_timestep = deque(maxlen=50)
+    agent = Agent()
     eval_freq = 100
-    n_eval = 10
+    n_eval = 100
+    best_perf = 1000000
 
     exp_name = datetime.now().strftime("%Y%m%d_%H%M")
     wandb.init(project='etri-mapf', entity='curie_ahn', name=exp_name)
 
-    # generate eval scenarios
-    save_scenarios(size=32, M=M, N=N, name='_eval', itr=n_eval)
-    eval_scenarios = []
-    for i in range(n_eval):
-        scenario = load_scenarios('323220_1_{}_{}_eval/scenario_{}.pkl'.format(M, N, i + 1))
-        eval_scenarios.append(scenario)
+    for e in range(epoch):
+        epoch_perf = []
+        epoch_loss = []
+        for sample_idx in tqdm(range(sample_per_epoch)):
+            scenario_dir = '323220_1_{}_{}/scenario_{}.pkl'.format(M, N, sample_idx + 1)
+            episode_timestep = run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=scenario_dir)
+            if episode_timestep is not None:
+                fit_res = agent.fit()
+                epoch_perf.append(episode_timestep)
+                epoch_loss = fit_res['loss']
 
-    for e in range(10000):
-        episode_timestep = run_episode(agent, M, N, exp_name, T_threshold, sample=True)
-        if episode_timestep is not None:
-            avg_timestep.append(episode_timestep)
+        eval_performance = []
+        for i in range(n_eval):
+            scenario_dir = '323220_1_{}_{}_eval/scenario_{}.pkl'.format(M, N, i + 1)
+            episode_timestep = run_episode(agent, M, N, exp_name, T_threshold, sample=False, scenario_dir=scenario_dir)
+            eval_performance.append(episode_timestep)
+
+        wandb.log({'epoch_loss_mean': np.mean(epoch_loss), 'epoch_cost_mean': np.mean(epoch_perf), 'e': e,
+                   'eval_mean': np.mean(eval_performance)})
+
+        if np.mean(eval_performance) < best_perf:
             torch.save(agent.state_dict(), 'saved/{}.th'.format(exp_name))
-            fit_res = agent.fit()
-            # print('E:{}, loss:{:.5f}, timestep:{}'.format(e, fit_res['loss'], episode_timestep))
-            wandb.log({'loss': fit_res['loss'], 'return': episode_timestep, 'e': e})
-
-        if e % eval_freq == 0:
-            eval_performance = []
-            for scenario in eval_scenarios:
-                episode_timestep = run_episode(agent, M, N, exp_name, T_threshold, sample=False, scenario=scenario)
-                eval_performance.append(episode_timestep)
-
-            wandb.log({'eval_mean': np.mean(eval_performance)})
+            best_perf = np.mean(eval_performance)
