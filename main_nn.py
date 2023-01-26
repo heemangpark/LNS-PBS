@@ -41,11 +41,10 @@ for e in range(10000):
     task_finished_bef = np.array([False for _ in range(N)])
     g, ag_node_indices, task_node_indices = convert_dgl(graph, agent_pos, total_tasks, task_finished_bef)
     joint_action_prev = np.array([0] * M)
-    ag_order = np.arange(M).reshape(1, -1)
+    ag_order = np.arange(M)
     continuing_ag = np.array([False for _ in range(M)])
 
     while True:
-        print(itr)
         """ 1.super-agent coordinates agent&task pairs """
         # `task_selected` initialized as the `task_finished` to jointly select task at each event
         task_selected = deepcopy(task_finished_bef)
@@ -57,7 +56,7 @@ for e in range(10000):
         # convert action to solver format
         # TODO: batch
 
-        for ag_idx, action in zip(ag_order[0], joint_action):
+        for ag_idx, action in zip(ag_order, joint_action):
             if action < N:
                 task_node_idx = action + M
                 task_loc = g.nodes[action + M].data['original_loc'].squeeze().tolist()
@@ -116,7 +115,7 @@ for e in range(10000):
 
         # overwrite output
         agent_pos_new = deepcopy(agent_pos)
-        for ag_idx in ag_order[0]:
+        for ag_idx in ag_order:
             if T[ag_idx] > 1:
                 agent_pos_new[ag_idx] = agent_traj[ag_idx][next_t - 1]
 
@@ -125,7 +124,7 @@ for e in range(10000):
         terminated = all(task_finished_aft)
 
         # TODO: training detail
-        agent.push(g, ag_node_indices, task_node_indices, ordered_joint_action, ag_order,
+        agent.push(g, ordered_joint_action, ag_order,
                    deepcopy(task_finished_bef), next_t, terminated)
 
         if VISUALIZE:
@@ -146,7 +145,7 @@ for e in range(10000):
         remaining_ag = list(set(range(M)) - set(continuing_ag_idx))
         random.shuffle(remaining_ag)
 
-        ag_order = np.array([continuing_ag_idx + remaining_ag])
+        ag_order = np.array(continuing_ag_idx + remaining_ag)
         joint_action_prev = np.array(ordered_joint_action, dtype=int)
 
         task_finished_bef = task_finished_aft
