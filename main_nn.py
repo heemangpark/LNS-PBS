@@ -114,8 +114,8 @@ def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario=None):
         terminated = all(task_finished_aft)
 
         # TODO: training detail
-        agent.push(g, ordered_joint_action, ag_order,
-                   deepcopy(task_finished_bef), next_t, terminated)
+        if sample:
+            agent.push(g, ordered_joint_action, ag_order, deepcopy(task_finished_bef), next_t, terminated)
 
         if VISUALIZE:
             vis_ta(graph, agent_pos, curr_tasks, str(itr) + "_finished", total_tasks=total_tasks,
@@ -148,7 +148,7 @@ if __name__ == '__main__':
     n_eval = 10
 
     exp_name = datetime.now().strftime("%Y%m%d_%H%M")
-    # wandb.init(project='etri-mapf', entity='curie_ahn', name=exp_name)
+    wandb.init(project='etri-mapf', entity='curie_ahn', name=exp_name)
 
     # generate eval scenarios
     save_scenarios(size=32, M=M, N=N, name='_eval', itr=n_eval)
@@ -162,7 +162,7 @@ if __name__ == '__main__':
         if episode_timestep is not None:
             avg_timestep.append(episode_timestep)
             torch.save(agent.state_dict(), 'saved/{}.th'.format(exp_name))
-            fit_res = agent.fit(baseline=sum(avg_timestep) / len(avg_timestep))
+            fit_res = agent.fit()
             # print('E:{}, loss:{:.5f}, timestep:{}'.format(e, fit_res['loss'], episode_timestep))
             wandb.log({'loss': fit_res['loss'], 'return': episode_timestep, 'e': e})
 

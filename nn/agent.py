@@ -74,24 +74,31 @@ class Agent(nn.Module):
 
     def fit(self, baseline=0):
         gs, joint_action, ag_order, task_finished, next_t, terminated = self.replay_memory.episode_sample()
+        bs = len(gs)
         gs = dgl.batch(gs)
         # ag_order = torch.Tensor(ag_order)
 
         joint_action = torch.tensor(joint_action)
-        all_action = joint_action.reshape(-1, 1)
+        all_action = joint_action.reshape(bs, -1)
         # ag_order = torch.tensor(ag_order)
 
         next_t = torch.tensor(next_t)
 
         policy = self.get_policy(gs)
         _pol = policy.gather(-1, all_action)
+        _pol = _pol.reshape(bs, -1)
+        _pol = _pol.log()
+        _pol[all_action == 20] = 0
 
-        behaved_agents = all_action < 20
-        selected_ag_pol = _pol[behaved_agents]
+        _logit = ((next_t - baseline).reshape(-1, 1) * _pol).mean(-1)
+        loss = (_logit.mean(-1)).sum()
 
-        logit_sum = (selected_ag_pol + 1e-5).log().mean()
-        cost = next_t.sum()
-        loss = (cost - baseline) * (logit_sum)
+        # behaved_agents = all_action < 20
+        # selected_ag_pol = _pol[behaved_agents]
+
+        # logit_sum = (selected_ag_pol + 1e-5).log().mean()
+        # cost = next_t.sum()
+        # loss = (cost - baseline) * (logit_sum)
 
         # TODO better loss design
 
