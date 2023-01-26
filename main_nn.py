@@ -15,9 +15,8 @@ from utils.solver_util import save_map, save_scenario, read_trajectory
 from utils.vis_graph import vis_ta
 
 exp_name = datetime.now().strftime("%Y%m%d_%H%M")
-scenario_name = exp_name
 
-VISUALIZE = True
+VISUALIZE = False
 solver_path = "EECBS/"
 M, N = 10, 20
 T_threshold = 10  # N step fwd
@@ -26,12 +25,13 @@ if not os.path.exists('scenarios/323220_1_{}_{}/'.format(M, N)):
 
 agent = Agent(batch_size=3)
 avg_return = deque(maxlen=50)
+wandb.init(project='etri-mapf', entity='curie_ahn', name=exp_name)
 
 for e in range(10000):
     save_scenarios(size=32, M=M, N=N)
     scenario = load_scenarios('323220_1_{}_{}/scenario_1.pkl'.format(M, N))
     grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
-    save_map(grid, scenario_name)
+    save_map(grid, exp_name)
 
     itr = 0
     episode_timestep = 0
@@ -73,18 +73,18 @@ for e in range(10000):
 
         """ 2.pass created agent-task pairs to low level solver """
         # convert action to the solver input formation
-        save_scenario(agent_pos, curr_tasks, scenario_name, grid.shape[0], grid.shape[1])
+        save_scenario(agent_pos, curr_tasks, exp_name, grid.shape[0], grid.shape[1])
 
         # Run solver
         c = [solver_path + "eecbs",
              "-m",
-             solver_path + scenario_name + '.map',
+             solver_path + exp_name + '.map',
              "-a",
-             solver_path + scenario_name + '.scen',
+             solver_path + exp_name + '.scen',
              "-o",
-             solver_path + scenario_name + ".csv",
+             solver_path + exp_name + ".csv",
              "--outputPaths",
-             solver_path + scenario_name + "_paths.txt",
+             solver_path + exp_name + "_paths.txt",
              "-k", str(M), "-t", "1", "--suboptimality=1.1"]
 
         # process_out.stdout format
@@ -98,7 +98,7 @@ for e in range(10000):
             break
 
         # Read solver output
-        agent_traj = read_trajectory(solver_path + scenario_name + "_paths.txt")
+        agent_traj = read_trajectory(solver_path + exp_name + "_paths.txt")
         T = np.array([len(t) for t in agent_traj])
 
         # TODO makespan -> sum of cost
