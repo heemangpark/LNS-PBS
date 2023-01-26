@@ -21,7 +21,7 @@ class Agent(nn.Module):
 
         self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-4)
 
-    def forward(self, g, ag_order, sample=True):
+    def forward(self, g, ag_order, continuing_ag, joint_action_prev, sample=True):
         bs = g.batch_size
         n_ag = ag_order.shape[-1]
         feature = self.generate_feature(g)  # one-hot encoded feature 'type'

@@ -20,14 +20,9 @@ scenario_name = exp_name
 VISUALIZE = False
 solver_path = "EECBS/"
 M, N = 9, 5
+T_threshold = 10  # N step fwd
 if not os.path.exists('scenarios/323220_1_{}_{}/'.format(M, N)):
     save_scenarios(size=32, M=M, N=N)
-
-# scenario = load_scenarios('323220_1_{}_{}/scenario_1.pkl'.format(M, N))
-# grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
-# save_map(grid, scenario_name)
-# vis_dist(graph, agent_pos, total_tasks)
-
 
 agent = Agent(batch_size=3)
 avg_return = deque(maxlen=50)
@@ -45,17 +40,18 @@ for e in range(10000):
     # `task_finished` defined for each episode
     task_finished_bef = np.array([False for _ in range(N)])
     g, ag_node_indices, task_node_indices = convert_dgl(graph, agent_pos, total_tasks, task_finished_bef)
-    joint_action = []
+    joint_action_prev = []
     ag_order = np.arange(M).reshape(1, -1)
+    continuing_ag = np.array([False for _ in range(M)])
 
     while True:
         print(itr)
         """ 1.super-agent coordinates agent&task pairs """
         # `task_selected` initialized as the `task_finished` to jointly select task at each event
         task_selected = deepcopy(task_finished_bef)
-        curr_tasks_solver = []
         agent_pos_solver = []
-        joint_action = agent(g, ag_order)
+        curr_tasks_solver = []
+        joint_action = agent(g, ag_order, continuing_ag, joint_action_prev)
 
         # convert action to solver format
         # TODO: batch
@@ -86,7 +82,6 @@ for e in range(10000):
              solver_path + scenario_name + '.scen',
              "-o",
              solver_path + scenario_name + ".csv",
-
              "--outputPaths",
              solver_path + scenario_name + "_paths.txt",
              "-k", "{}".format(len(agent_pos_solver)), "-t", "1", "--suboptimality=1.1"]
@@ -124,7 +119,6 @@ for e in range(10000):
                 agent_pos_new[ag] = agent_traj[i][next_t - 1]
 
         agent_pos = agent_pos_new
-
         # Replay memory 에 transition 저장. Agent position 을 graph 의 node 형태로
         terminated = all(task_finished_aft)
 
@@ -143,7 +137,18 @@ for e in range(10000):
             wandb.log({'loss': fit_res['loss'], 'return': episode_timestep})
             break
 
-        # TODO: small T agent continue
+        # joint action in order
+        joint_action_ordered = np.empty_like(joint_action)
+        joint_action_ordered[ag_order[0]] = joint_action
+
+        # agent with small T maintains previous action
+        continuing_ag = (0 < T - next_t) * (T - next_t < T_threshold)
+        continuing_ag_idx = continuing_ag.nonzero()[0].tolist()
+        finished_ag_idx = finished_ag.nonzero()[0].tolist()
+        remaining_ag = set(range(M)) - set(continuing_ag_idx + finished_ag_idx)
+
+        ag_order = np.array([continuing_ag_idx + finished_ag_idx + list(remaining_ag)])
+        joint_action_prev = joint_action_ordered[ag_order[0]]
 
         task_finished_bef = task_finished_aft
         g, ag_node_indices, _ = convert_dgl(graph, agent_pos, total_tasks, task_finished_bef)
