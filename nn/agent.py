@@ -97,7 +97,7 @@ class Agent(nn.Module):
 
         self.optimizer.zero_grad()
         loss.backward()
-        torch.nn.utils.clip_grad_norm(self.parameters(), 0.5)
+        torch.nn.utils.clip_grad_norm_(self.parameters(), 0.5)
         self.optimizer.step()
 
         self.replay_memory.memory = []  # on-policy

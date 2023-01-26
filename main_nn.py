@@ -107,7 +107,8 @@ for e in range(10000):
         # Mark finished agent, finished task
         next_t = T[T > 1].min()
 
-        finished_ag = T == next_t  # as more than one agent may finish at a time
+        finished_ag = (T == next_t) * (
+                    np.array(ordered_joint_action) < N)  # as more than one agent may finish at a time
         finished_task_idx = np.array(ordered_joint_action)[finished_ag]
         task_finished_aft = deepcopy(task_finished_bef)
         task_finished_aft[finished_task_idx] = True
