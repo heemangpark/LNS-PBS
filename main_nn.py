@@ -1,4 +1,3 @@
-import os
 import subprocess
 import random
 import torch
@@ -14,29 +13,22 @@ from utils.generate_scenarios import load_scenarios, save_scenarios
 from utils.solver_util import save_map, save_scenario, read_trajectory
 from utils.vis_graph import vis_ta
 
-exp_name = datetime.now().strftime("%Y%m%d_%H%M")
-
 VISUALIZE = False
 solver_path = "EECBS/"
-M, N = 10, 20
-T_threshold = 10  # N step fwd
-if not os.path.exists('scenarios/323220_1_{}_{}/'.format(M, N)):
-    save_scenarios(size=32, M=M, N=N)
 
-agent = Agent(batch_size=3)
-avg_return = deque(maxlen=50)
-wandb.init(project='etri-mapf', entity='curie_ahn', name=exp_name)
 
-for e in range(10000):
-    save_scenarios(size=32, M=M, N=N)
-    scenario = load_scenarios('323220_1_{}_{}/scenario_1.pkl'.format(M, N))
+def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario=None):
+    if scenario is None:
+        save_scenarios(size=32, M=M, N=N)
+        scenario = load_scenarios('323220_1_{}_{}/scenario_1.pkl'.format(M, N))
+    else:
+        scenario = scenario
     grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
     save_map(grid, exp_name)
 
     itr = 0
     episode_timestep = 0
 
-    agent_traj = []
     # `task_finished` defined for each episode
     task_finished_bef = np.array([False for _ in range(N)])
     g, ag_node_indices, task_node_indices = convert_dgl(graph, agent_pos, total_tasks, task_finished_bef)
@@ -47,10 +39,8 @@ for e in range(10000):
     while True:
         """ 1.super-agent coordinates agent&task pairs """
         # `task_selected` initialized as the `task_finished` to jointly select task at each event
-        task_selected = deepcopy(task_finished_bef)
         curr_tasks = [[] for _ in range(M)]  # in order of init agent idx
-        joint_action = agent(g, ag_order, continuing_ag, joint_action_prev)
-        # ordered_joint_action = np.empty(shape=(M,), dtype=int)
+        joint_action = agent(g, ag_order, continuing_ag, joint_action_prev, sample=sample)
         ordered_joint_action = [0] * M
 
         # convert action to solver format
@@ -58,7 +48,6 @@ for e in range(10000):
 
         for ag_idx, action in zip(ag_order, joint_action):
             if action < N:
-                task_node_idx = action + M
                 task_loc = g.nodes[action + M].data['original_loc'].squeeze().tolist()
             else:
                 task_loc = agent_pos[ag_idx].tolist()
@@ -95,7 +84,7 @@ for e in range(10000):
             sum_costs = int(text_byte.split('Succeed,')[-1].split(',')[-3])
         except:
             agent.replay_memory.memory = []
-            break
+            return None
 
         # Read solver output
         agent_traj = read_trajectory(solver_path + exp_name + "_paths.txt")
@@ -108,7 +97,7 @@ for e in range(10000):
         next_t = T[T > 1].min()
 
         finished_ag = (T == next_t) * (
-                    np.array(ordered_joint_action) < N)  # as more than one agent may finish at a time
+                np.array(ordered_joint_action) < N)  # as more than one agent may finish at a time
         finished_task_idx = np.array(ordered_joint_action)[finished_ag]
         task_finished_aft = deepcopy(task_finished_bef)
         task_finished_aft[finished_task_idx] = True
@@ -133,12 +122,7 @@ for e in range(10000):
                    task_finished=task_finished_aft)
 
         if terminated:
-            avg_return.append(episode_timestep)
-            torch.save(agent.state_dict(), 'saved/{}.th'.format(exp_name))
-            fit_res = agent.fit(baseline=sum(avg_return) / len(avg_return))
-            print('E:{}, loss:{:.5f}, return:{}'.format(e, fit_res['loss'], episode_timestep))
-            wandb.log({'loss': fit_res['loss'], 'return': episode_timestep})
-            break
+            return episode_timestep
 
         # agent with small T maintains previous action
         continuing_ag = (0 < T - next_t) * (T - next_t < T_threshold)
@@ -152,3 +136,40 @@ for e in range(10000):
         task_finished_bef = task_finished_aft
         g, ag_node_indices, _ = convert_dgl(graph, agent_pos, total_tasks, task_finished_bef)
         itr += 1
+
+
+if __name__ == '__main__':
+
+    M, N = 10, 20
+    T_threshold = 10  # N step fwd
+    agent = Agent(batch_size=3)
+    avg_timestep = deque(maxlen=50)
+    eval_freq = 100
+    n_eval = 10
+
+    exp_name = datetime.now().strftime("%Y%m%d_%H%M")
+    # wandb.init(project='etri-mapf', entity='curie_ahn', name=exp_name)
+
+    # generate eval scenarios
+    save_scenarios(size=32, M=M, N=N, name='_eval', itr=n_eval)
+    eval_scenarios = []
+    for i in range(n_eval):
+        scenario = load_scenarios('323220_1_{}_{}_eval/scenario_{}.pkl'.format(M, N, i + 1))
+        eval_scenarios.append(scenario)
+
+    for e in range(10000):
+        episode_timestep = run_episode(agent, M, N, exp_name, T_threshold, sample=True)
+        if episode_timestep is not None:
+            avg_timestep.append(episode_timestep)
+            torch.save(agent.state_dict(), 'saved/{}.th'.format(exp_name))
+            fit_res = agent.fit(baseline=sum(avg_timestep) / len(avg_timestep))
+            # print('E:{}, loss:{:.5f}, timestep:{}'.format(e, fit_res['loss'], episode_timestep))
+            wandb.log({'loss': fit_res['loss'], 'return': episode_timestep, 'e': e})
+
+        if e % eval_freq == 0:
+            eval_performance = []
+            for scenario in eval_scenarios:
+                episode_timestep = run_episode(agent, M, N, exp_name, T_threshold, sample=False, scenario=scenario)
+                eval_performance.append(episode_timestep)
+
+            wandb.log({'eval_mean': np.mean(eval_performance)})
