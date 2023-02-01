@@ -13,11 +13,10 @@ from utils.generate_scenarios import load_scenarios
 from utils.solver_util import save_map, save_scenario, read_trajectory
 from utils.vis_graph import vis_ta
 
-VISUALIZE = True
 solver_path = "EECBS/"
 
 
-def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=None):
+def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=None, VISUALIZE=False):
     scenario = load_scenarios(scenario_dir)
     grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
     save_map(grid, exp_name)
@@ -80,7 +79,7 @@ def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=No
             sum_costs = int(text_byte.split('Succeed,')[-1].split(',')[-3])
         except:
             agent.replay_memory.memory = []
-            return None
+            return None, itr
 
         # Read solver output
         agent_traj = read_trajectory(solver_path + exp_name + "_paths.txt")
@@ -118,7 +117,7 @@ def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=No
                    task_finished=task_finished_aft)
 
         if terminated:
-            return episode_timestep
+            return episode_timestep, itr
 
         # agent with small T maintains previous action
         continuing_ag = (0 < T - next_t) * (T - next_t < T_threshold)
@@ -139,11 +138,12 @@ if __name__ == '__main__':
 
     epoch = 1000
     sample_per_epoch = 50
+
     M, N = 10, 20
     T_threshold = 10  # N step fwd
     agent = Agent()
-    eval_freq = 100
-    n_eval = 100
+    agent.load_state_dict(torch.load('saved/20230201_1322.th'))
+    n_eval = 20
     best_perf = 1000000
 
     exp_name = datetime.now().strftime("%Y%m%d_%H%M")
@@ -152,22 +152,32 @@ if __name__ == '__main__':
     for e in range(epoch):
         epoch_perf = []
         epoch_loss = []
+        epoch_itr = []
         for sample_idx in tqdm(range(sample_per_epoch)):
             scenario_dir = '323220_1_{}_{}/scenario_{}.pkl'.format(M, N, sample_idx + 1)
-            episode_timestep = run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=scenario_dir)
+            episode_timestep, itr = run_episode(agent, M, N, exp_name, T_threshold, sample=True,
+                                                scenario_dir=scenario_dir)
             if episode_timestep is not None:
                 fit_res = agent.fit()
                 epoch_perf.append(episode_timestep)
+                epoch_itr.append(itr)
                 epoch_loss = fit_res['loss']
 
         eval_performance = []
-        for i in range(n_eval):
+        eval_itr = []
+        for i in tqdm(range(n_eval)):
             scenario_dir = '323220_1_{}_{}_eval/scenario_{}.pkl'.format(M, N, i + 1)
-            episode_timestep = run_episode(agent, M, N, exp_name, T_threshold, sample=False, scenario_dir=scenario_dir)
+            episode_timestep, itr = run_episode(agent, M, N, exp_name, T_threshold, sample=False,
+                                                scenario_dir=scenario_dir)
             eval_performance.append(episode_timestep)
+            eval_itr.append(itr)
 
-        wandb.log({'epoch_loss_mean': np.mean(epoch_loss), 'epoch_cost_mean': np.mean(epoch_perf), 'e': e,
-                   'eval_mean': np.mean(eval_performance)})
+        wandb.log({'epoch_loss_mean': np.mean(epoch_loss),
+                   'epoch_cost_mean': np.mean(epoch_perf),
+                   'e': e,
+                   'eval_cost_mean': np.mean(eval_performance),
+                   'epoch_itr_mean': np.mean(epoch_itr),
+                   'eval_itr_mean': np.mean(eval_itr)})
 
         if np.mean(eval_performance) < best_perf:
             torch.save(agent.state_dict(), 'saved/{}.th'.format(exp_name))

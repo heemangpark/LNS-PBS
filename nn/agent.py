@@ -19,7 +19,7 @@ class Agent(nn.Module):
 
         self.replay_memory = ReplayMemory(capacity=memory_size, batch_size=batch_size)
 
-        self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-4)
+        self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
 
     def forward(self, g, ag_order, continuing_ag, joint_action_prev, sample=True):
         # bs = g.batch_size
@@ -49,6 +49,27 @@ class Agent(nn.Module):
             #     # selected_ag.append(agent_idx)
             out_action.append(action.item())
 
+            policy_temp[:, action] = 0
+
+        return out_action
+
+    def forward_heuristic(self, g, ag_order, continuing_ag, joint_action_prev, **kwargs):
+        n_ag = len(ag_order)
+        dists = g.edata['dist'].reshape(-1, n_ag).T
+
+        finished_type = g.ndata['type'][n_ag:] == 2
+        dists[:, ~finished_type] = 999
+        policy_temp = 1 / dists
+        policy_temp = policy_temp / policy_temp.sum(-1, keepdims=True)
+
+        out_action = []
+        for itr in range(n_ag):
+            policy_temp[:, -1] = 1e-5  # dummy node
+            agent_idx = ag_order[itr]
+            # TODO: normalize prob?
+            action = policy_temp[agent_idx].argmax(-1)
+            action[bool(continuing_ag[agent_idx])] = joint_action_prev[agent_idx].item()
+            out_action.append(action.item())
             policy_temp[:, action] = 0
 
         return out_action
