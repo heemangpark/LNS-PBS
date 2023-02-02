@@ -128,18 +128,18 @@ def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=No
         remaining_ag = list(set(range(M)) - set(continuing_ag_idx))
 
         # option 1. randomly select remaining ag
-        # random.shuffle(remaining_ag)
+        random.shuffle(remaining_ag)
 
         # option 2. sort remaining ag by remaining task dist
-        dists = g.edata['dist'].reshape(-1, M).T
-        finished = task_finished_aft.nonzero()[0]
-        reserved = np.array(joint_action)[continuing_ag_idx]
-
-        dists[:, finished] = 0
-        dists[:, reserved] = 0
-        remaining_ag_dist = dists[remaining_ag].mean(-1)
-        remaining_order = remaining_ag_dist.sort().indices
-        remaining_ag = np.array(remaining_ag)[remaining_order].tolist()
+        # dists = g.edata['dist'].reshape(-1, M).T
+        # finished = task_finished_aft.nonzero()[0]
+        # reserved = np.array(joint_action)[continuing_ag_idx]
+        # dists[:, finished] = 0
+        # dists[:, reserved] = 0
+        # remaining_ag_dist = dists[remaining_ag].mean(-1)
+        # remaining_order = remaining_ag_dist.sort().indices
+        # remaining_ag = np.array(remaining_ag)[remaining_order].tolist()
+        # ========================
 
         ag_order = np.array(continuing_ag_idx + remaining_ag)
         assert len(set(ag_order)) == M
@@ -159,7 +159,7 @@ if __name__ == '__main__':
     M, N = 10, 20
     T_threshold = 10  # N step fwd
     agent = Agent()
-    agent.load_state_dict(torch.load('saved/20230201_1322.th'))
+    agent.load_state_dict(torch.load('saved/20230201_1611.th'))
     n_eval = 20
     best_perf = 1000000
 
@@ -185,12 +185,13 @@ if __name__ == '__main__':
                 epoch_loss = fit_res['loss']
 
         #
-        for i in tqdm(range(1)):
+        for i in tqdm(range(n_eval)):
             scenario_dir = '323220_1_{}_{}_eval/scenario_{}.pkl'.format(M, N, i + 1)
             episode_timestep, itr = run_episode(agent, M, N, exp_name, T_threshold, sample=False,
                                                 scenario_dir=scenario_dir)
-            eval_performance.append(episode_timestep)
-            eval_itr.append(itr)
+            if episode_timestep is not None:
+                eval_performance.append(episode_timestep)
+                eval_itr.append(itr)
 
         wandb.log({'epoch_loss_mean': np.mean(epoch_loss),
                    'epoch_cost_mean': np.mean(epoch_perf),
