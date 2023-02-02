@@ -81,6 +81,9 @@ def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=No
             agent.replay_memory.memory = []
             return None, itr
 
+        if itr > N:
+            return None, itr
+
         # Read solver output
         agent_traj = read_trajectory(solver_path + exp_name + "_paths.txt")
         T = np.array([len(t) for t in agent_traj])
@@ -123,9 +126,23 @@ def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=No
         continuing_ag = (0 < T - next_t) * (T - next_t < T_threshold)
         continuing_ag_idx = continuing_ag.nonzero()[0].tolist()
         remaining_ag = list(set(range(M)) - set(continuing_ag_idx))
-        random.shuffle(remaining_ag)
+
+        # option 1. randomly select remaining ag
+        # random.shuffle(remaining_ag)
+
+        # option 2. sort remaining ag by remaining task dist
+        dists = g.edata['dist'].reshape(-1, M).T
+        finished = task_finished_aft.nonzero()[0]
+        reserved = np.array(joint_action)[continuing_ag_idx]
+
+        dists[:, finished] = 0
+        dists[:, reserved] = 0
+        remaining_ag_dist = dists[remaining_ag].mean(-1)
+        remaining_order = remaining_ag_dist.sort().indices
+        remaining_ag = np.array(remaining_ag)[remaining_order].tolist()
 
         ag_order = np.array(continuing_ag_idx + remaining_ag)
+        assert len(set(ag_order)) == M
         joint_action_prev = np.array(ordered_joint_action, dtype=int)
 
         task_finished_bef = task_finished_aft
@@ -153,6 +170,10 @@ if __name__ == '__main__':
         epoch_perf = []
         epoch_loss = []
         epoch_itr = []
+        eval_performance = []
+        eval_itr = []
+
+        # train
         for sample_idx in tqdm(range(sample_per_epoch)):
             scenario_dir = '323220_1_{}_{}/scenario_{}.pkl'.format(M, N, sample_idx + 1)
             episode_timestep, itr = run_episode(agent, M, N, exp_name, T_threshold, sample=True,
@@ -163,9 +184,8 @@ if __name__ == '__main__':
                 epoch_itr.append(itr)
                 epoch_loss = fit_res['loss']
 
-        eval_performance = []
-        eval_itr = []
-        for i in tqdm(range(n_eval)):
+        #
+        for i in tqdm(range(1)):
             scenario_dir = '323220_1_{}_{}_eval/scenario_{}.pkl'.format(M, N, i + 1)
             episode_timestep, itr = run_episode(agent, M, N, exp_name, T_threshold, sample=False,
                                                 scenario_dir=scenario_dir)
@@ -177,7 +197,8 @@ if __name__ == '__main__':
                    'e': e,
                    'eval_cost_mean': np.mean(eval_performance),
                    'epoch_itr_mean': np.mean(epoch_itr),
-                   'eval_itr_mean': np.mean(eval_itr)})
+                   'eval_itr_mean': np.mean(eval_itr),
+                   'n_sample': len(epoch_itr)})
 
         if np.mean(eval_performance) < best_perf:
             torch.save(agent.state_dict(), 'saved/{}.th'.format(exp_name))

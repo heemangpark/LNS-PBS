@@ -107,7 +107,7 @@ class Agent(nn.Module):
 
         policy = self.get_policy(gs)
         _pol = policy.gather(-1, all_action)
-        _pol = _pol.reshape(bs, -1)
+        _pol = _pol.reshape(bs, -1) + 1e-4
         _pol = _pol.log()
         _pol[all_action == 20] = 0
 
