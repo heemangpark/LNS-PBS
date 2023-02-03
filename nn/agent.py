@@ -20,6 +20,7 @@ class Agent(nn.Module):
         self.replay_memory = ReplayMemory(capacity=memory_size, batch_size=batch_size)
 
         self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        self.losses = []
 
     def forward(self, g, ag_order, continuing_ag, joint_action_prev, sample=True):
         # bs = g.batch_size
@@ -27,50 +28,44 @@ class Agent(nn.Module):
         policy = self.get_policy(g)
 
         policy_temp = policy.clone().reshape(n_ag, -1)
-        # selected_ag = []
         out_action = []
         for itr in range(n_ag):
             policy_temp[:, -1] = 1e-5  # dummy node
             agent_idx = ag_order[itr]
             # TODO: normalize prob?
 
+            selected_ag_policy = policy_temp[agent_idx]
             if sample:
-                selected_ag_policy = policy_temp[agent_idx]
                 action = torch.distributions.Categorical(selected_ag_policy).sample()
             else:
-                action = policy_temp[agent_idx].argmax(-1)
+                action = selected_ag_policy.argmax(-1)
 
+            # mask continuing ag
             action[bool(continuing_ag[agent_idx])] = joint_action_prev[agent_idx].item()
-
-            # if bs > 1:
-            #     # selected_ag.append(agent_idx.tolist())
-            #     out_action.append(action.tolist())
-            # else:
-            #     # selected_ag.append(agent_idx)
             out_action.append(action.item())
-
             policy_temp[:, action] = 0
 
         return out_action
 
-    def forward_heuristic(self, g, ag_order, continuing_ag, joint_action_prev, **kwargs):
+    def forward_heuristic(self, g, ag_order, continuing_ag, joint_action_prev, sample=False, **kwargs):
         n_ag = len(ag_order)
-        dists = g.edata['dist'].reshape(-1, n_ag).T
+        task_type = g.ndata['type'][n_ag:] == 2
+        dists = g.edata['dist'].reshape(-1, n_ag).T + 1e-5
+        dists[:, ~task_type] = 999
 
-        finished_type = g.ndata['type'][n_ag:] == 2
-        dists[:, ~finished_type] = 999
-        policy_temp = 1 / dists
-        policy_temp = policy_temp / policy_temp.sum(-1, keepdims=True)
-
+        # policy_temp = torch.softmax(1 / dists, -1)
         out_action = []
         for itr in range(n_ag):
-            policy_temp[:, -1] = 1e-5  # dummy node
+            dists[:, -1] = 5  # dummy node
             agent_idx = ag_order[itr]
-            # TODO: normalize prob?
-            action = policy_temp[agent_idx].argmax(-1)
+            selected_ag_dists = dists[agent_idx]
+
+            action = selected_ag_dists.argmin(-1)
+
+            # mask continuing ag
             action[bool(continuing_ag[agent_idx])] = joint_action_prev[agent_idx].item()
             out_action.append(action.item())
-            policy_temp[:, action] = 0
+            dists[:, action] = 999
 
         return out_action
 
@@ -113,6 +108,7 @@ class Agent(nn.Module):
 
         _logit = ((next_t - baseline).unsqueeze(-1) * _pol).mean(-1)
         loss = _logit.mean()
+        self.losses.append(loss)
 
         # behaved_agents = all_action < 20
         # selected_ag_pol = _pol[behaved_agents]
@@ -122,11 +118,14 @@ class Agent(nn.Module):
         # loss = (cost - baseline) * (logit_sum)
 
         # TODO better loss design
+        if len(self.losses) > 20:
+            loss = torch.stack(self.losses).mean()
 
-        self.optimizer.zero_grad()
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.parameters(), 0.5)
-        self.optimizer.step()
+            self.optimizer.zero_grad()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.parameters(), 0.5)
+            self.optimizer.step()
+            self.losses = []
 
         self.replay_memory.memory = []  # on-policy
 

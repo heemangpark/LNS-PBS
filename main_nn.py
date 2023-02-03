@@ -16,7 +16,7 @@ from utils.vis_graph import vis_ta
 solver_path = "EECBS/"
 
 
-def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=None, VISUALIZE=False):
+def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=None, VISUALIZE=False, heuristic=False):
     scenario = load_scenarios(scenario_dir)
     grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
     save_map(grid, exp_name)
@@ -35,7 +35,10 @@ def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=No
         """ 1.super-agent coordinates agent&task pairs """
         # `task_selected` initialized as the `task_finished` to jointly select task at each event
         curr_tasks = [[] for _ in range(M)]  # in order of init agent idx
-        joint_action = agent(g, ag_order, continuing_ag, joint_action_prev, sample=sample)
+        if heuristic:
+            joint_action = agent.forward_heuristic(g, ag_order, continuing_ag, joint_action_prev, sample=sample)
+        else:
+            joint_action = agent(g, ag_order, continuing_ag, joint_action_prev, sample=sample)
         ordered_joint_action = [0] * M
 
         # convert action to solver format
@@ -128,17 +131,17 @@ def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=No
         remaining_ag = list(set(range(M)) - set(continuing_ag_idx))
 
         # option 1. randomly select remaining ag
-        random.shuffle(remaining_ag)
+        # random.shuffle(remaining_ag)
 
         # option 2. sort remaining ag by remaining task dist
-        # dists = g.edata['dist'].reshape(-1, M).T
-        # finished = task_finished_aft.nonzero()[0]
-        # reserved = np.array(joint_action)[continuing_ag_idx]
-        # dists[:, finished] = 0
-        # dists[:, reserved] = 0
-        # remaining_ag_dist = dists[remaining_ag].mean(-1)
-        # remaining_order = remaining_ag_dist.sort().indices
-        # remaining_ag = np.array(remaining_ag)[remaining_order].tolist()
+        dists = g.edata['dist'].reshape(-1, M).T
+        finished = task_finished_aft.nonzero()[0]
+        reserved = np.array(joint_action)[continuing_ag_idx]
+        dists[:, finished] = 0
+        dists[:, reserved] = 0
+        remaining_ag_dist = dists[remaining_ag].mean(-1)
+        remaining_order = remaining_ag_dist.sort().indices
+        remaining_ag = np.array(remaining_ag)[remaining_order].tolist()
         # ========================
 
         ag_order = np.array(continuing_ag_idx + remaining_ag)
@@ -159,12 +162,12 @@ if __name__ == '__main__':
     M, N = 10, 20
     T_threshold = 10  # N step fwd
     agent = Agent()
-    agent.load_state_dict(torch.load('saved/20230201_1611.th'))
+    # agent.load_state_dict(torch.load('saved/20230201_1611.th'))
     n_eval = 20
     best_perf = 1000000
 
     exp_name = datetime.now().strftime("%Y%m%d_%H%M")
-    # wandb.init(project='etri-mapf', entity='curie_ahn', name=exp_name)
+    wandb.init(project='etri-mapf', entity='curie_ahn', name=exp_name)
 
     for e in range(epoch):
         epoch_perf = []
