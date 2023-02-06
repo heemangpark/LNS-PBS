@@ -155,9 +155,9 @@ def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=No
         dists[:, reserved] = 9
 
         # option 2-1 sort by mean
-        # remaining_ag_dist = dists[remaining_ag].mean(-1)
+        remaining_ag_dist = dists[remaining_ag].mean(-1)
         # option 2-2 sort by min
-        remaining_ag_dist = dists[remaining_ag, :-1].min(-1).values
+        # remaining_ag_dist = dists[remaining_ag, :-1].min(-1).values
         remaining_order = remaining_ag_dist.sort().indices
         remaining_ag_idx = np.array(remaining_ag)[remaining_order].tolist()
         if type(remaining_ag_idx) == int:
