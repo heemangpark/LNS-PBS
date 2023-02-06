@@ -151,14 +151,19 @@ def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=No
         dists = g.edata['dist'].reshape(-1, M).T
         finished = task_finished_aft.nonzero()[0]
         reserved = np.array(best_joint_action)[continuing_ag_idx]
-        dists[:, finished] = 0
-        dists[:, reserved] = 0
-        remaining_ag_dist = dists[remaining_ag].mean(-1)
-        remaining_order = remaining_ag_dist.sort().indices
-        remaining_ag = np.array(remaining_ag)[remaining_order].tolist()
-        # ========================
+        dists[:, finished] = 9
+        dists[:, reserved] = 9
 
-        ag_order = np.array(continuing_ag_idx + remaining_ag)
+        # option 2-1 sort by mean
+        # remaining_ag_dist = dists[remaining_ag].mean(-1)
+        # option 2-2 sort by min
+        remaining_ag_dist = dists[remaining_ag, :-1].min(-1).values
+        remaining_order = remaining_ag_dist.sort().indices
+        remaining_ag_idx = np.array(remaining_ag)[remaining_order].tolist()
+        if type(remaining_ag_idx) == int:
+            remaining_ag_idx = [remaining_ag_idx]
+        # ========================
+        ag_order = np.array(continuing_ag_idx + remaining_ag_idx)
         assert len(set(ag_order)) == M
         joint_action_prev = np.array(best_ordered_joint_action, dtype=int)
 
