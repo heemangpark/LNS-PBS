@@ -16,7 +16,8 @@ from utils.vis_graph import vis_ta
 solver_path = "EECBS/"
 
 
-def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=None, VISUALIZE=False, heuristic=False):
+def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=None, VISUALIZE=False, heuristic=False,
+                n_sample=5):
     scenario = load_scenarios(scenario_dir)
     grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
     save_map(grid, exp_name)
@@ -34,72 +35,83 @@ def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=No
     while True:
         """ 1.super-agent coordinates agent&task pairs """
         # `task_selected` initialized as the `task_finished` to jointly select task at each event
-        curr_tasks = [[] for _ in range(M)]  # in order of init agent idx
-        if heuristic:
-            joint_action = agent.forward_heuristic(g, ag_order, continuing_ag, joint_action_prev, sample=sample)
-        else:
-            joint_action = agent(g, ag_order, continuing_ag, joint_action_prev, sample=sample)
-        ordered_joint_action = [0] * M
+        best_T = None
+        best_ordered_joint_action = None
+        best_agent_traj = None
+        best_curr_tasks = None
+        best_joint_action = None
+        max_T = 100
 
-        # convert action to solver format
-        # TODO: batch
-
-        for ag_idx, action in zip(ag_order, joint_action):
-            if action < N:
-                task_loc = g.nodes[action + M].data['original_loc'].squeeze().tolist()
+        for sample in range(n_sample):
+            curr_tasks = [[] for _ in range(M)]  # in order of init agent idx
+            if heuristic:
+                joint_action = agent.forward_heuristic(g, ag_order, continuing_ag, joint_action_prev, sample=sample)
             else:
-                task_loc = agent_pos[ag_idx].tolist()
+                joint_action = agent(g, ag_order, continuing_ag, joint_action_prev, sample=sample)
+            ordered_joint_action = [0] * M
 
-            curr_tasks[ag_idx] = [task_loc]
-            ordered_joint_action[ag_idx] = action
+            # convert action to solver format
+            # TODO: batch
 
-        # visualize
-        if VISUALIZE:
-            vis_ta(graph, agent_pos, curr_tasks, str(itr) + "_assigned", total_tasks=total_tasks,
-                   task_finished=task_finished_bef)
+            for ag_idx, action in zip(ag_order, joint_action):
+                if action < N:
+                    task_loc = g.nodes[action + M].data['original_loc'].squeeze().tolist()
+                else:
+                    task_loc = agent_pos[ag_idx].tolist()
 
-        """ 2.pass created agent-task pairs to low level solver """
-        # convert action to the solver input formation
-        save_scenario(agent_pos, curr_tasks, exp_name, grid.shape[0], grid.shape[1])
+                curr_tasks[ag_idx] = [task_loc]
+                ordered_joint_action[ag_idx] = action
 
-        # Run solver
-        c = [solver_path + "eecbs",
-             "-m",
-             solver_path + exp_name + '.map',
-             "-a",
-             solver_path + exp_name + '.scen',
-             "-o",
-             solver_path + exp_name + ".csv",
-             "--outputPaths",
-             solver_path + exp_name + "_paths.txt",
-             "-k", str(M), "-t", "1", "--suboptimality=1.1"]
+            """ 2.pass created agent-task pairs to low level solver """
+            # convert action to the solver input formation
+            save_scenario(agent_pos, curr_tasks, exp_name, grid.shape[0], grid.shape[1])
 
-        # process_out.stdout format
-        # runtime, num_restarts, num_expanded, num_generated, solution_cost, min_sum_of_costs, avg_path_length
-        process_out = subprocess.run(c, capture_output=True)
-        text_byte = process_out.stdout.decode('utf-8')
-        try:
-            sum_costs = int(text_byte.split('Succeed,')[-1].split(',')[-3])
-        except:
-            agent.replay_memory.memory = []
-            return None, itr
+            # Run solver
+            c = [solver_path + "eecbs",
+                 "-m",
+                 solver_path + exp_name + '.map',
+                 "-a",
+                 solver_path + exp_name + '.scen',
+                 "-o",
+                 solver_path + exp_name + ".csv",
+                 "--outputPaths",
+                 solver_path + exp_name + "_paths.txt",
+                 "-k", str(M), "-t", "1", "--suboptimality=1.1"]
 
-        if itr > N:
-            return None, itr
+            # process_out.stdout format
+            # runtime, num_restarts, num_expanded, num_generated, solution_cost, min_sum_of_costs, avg_path_length
+            process_out = subprocess.run(c, capture_output=True)
+            text_byte = process_out.stdout.decode('utf-8')
+            try:
+                sum_costs = int(text_byte.split('Succeed,')[-1].split(',')[-3])
+            except:
+                agent.replay_memory.memory = []
+                return None, itr
 
-        # Read solver output
-        agent_traj = read_trajectory(solver_path + exp_name + "_paths.txt")
-        T = np.array([len(t) for t in agent_traj])
+            if itr > N:
+                return None, itr
+
+            # Read solver output
+            agent_traj = read_trajectory(solver_path + exp_name + "_paths.txt")
+            T = np.array([len(t) for t in agent_traj])
+
+            if max_T > max(T):
+                best_T = T
+                best_curr_tasks = curr_tasks
+                best_agent_traj = agent_traj
+                best_ordered_joint_action = ordered_joint_action
+                max_T = max(T)
+                best_joint_action = joint_action
 
         # TODO makespan -> sum of cost
         # TODO batch training loop
 
         # Mark finished agent, finished task
-        next_t = T[T > 1].min()
+        next_t = best_T[best_T > 1].min()
 
-        finished_ag = (T == next_t) * (
-                np.array(ordered_joint_action) < N)  # as more than one agent may finish at a time
-        finished_task_idx = np.array(ordered_joint_action)[finished_ag]
+        finished_ag = (best_T == next_t) * (
+                np.array(best_ordered_joint_action) < N)  # as more than one agent may finish at a time
+        finished_task_idx = np.array(best_ordered_joint_action)[finished_ag]
         task_finished_aft = deepcopy(task_finished_bef)
         task_finished_aft[finished_task_idx] = True
         episode_timestep += next_t
@@ -107,26 +119,28 @@ def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=No
         # overwrite output
         agent_pos_new = deepcopy(agent_pos)
         for ag_idx in ag_order:
-            if T[ag_idx] > 1:
-                agent_pos_new[ag_idx] = agent_traj[ag_idx][next_t - 1]
+            if best_T[ag_idx] > 1:
+                agent_pos_new[ag_idx] = best_agent_traj[ag_idx][next_t - 1]
 
-        agent_pos = agent_pos_new
         # Replay memory 에 transition 저장. Agent position 을 graph 의 node 형태로
         terminated = all(task_finished_aft)
 
         # TODO: training detail
         if sample:
-            agent.push(g, ordered_joint_action, ag_order, deepcopy(task_finished_bef), next_t, terminated)
+            agent.push(g, best_ordered_joint_action, ag_order, deepcopy(task_finished_bef), next_t, terminated)
 
         if VISUALIZE:
-            vis_ta(graph, agent_pos, curr_tasks, str(itr) + "_finished", total_tasks=total_tasks,
+            # visualize
+            vis_ta(graph, agent_pos, best_curr_tasks, str(itr) + "_assigned", total_tasks=total_tasks,
+                   task_finished=task_finished_bef)
+            vis_ta(graph, agent_pos_new, best_curr_tasks, str(itr) + "_finished", total_tasks=total_tasks,
                    task_finished=task_finished_aft)
 
         if terminated:
             return episode_timestep, itr
 
         # agent with small T maintains previous action
-        continuing_ag = (0 < T - next_t) * (T - next_t < T_threshold)
+        continuing_ag = (0 < best_T - next_t) * (best_T - next_t < T_threshold)
         continuing_ag_idx = continuing_ag.nonzero()[0].tolist()
         remaining_ag = list(set(range(M)) - set(continuing_ag_idx))
 
@@ -136,7 +150,7 @@ def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=No
         # option 2. sort remaining ag by remaining task dist
         dists = g.edata['dist'].reshape(-1, M).T
         finished = task_finished_aft.nonzero()[0]
-        reserved = np.array(joint_action)[continuing_ag_idx]
+        reserved = np.array(best_joint_action)[continuing_ag_idx]
         dists[:, finished] = 0
         dists[:, reserved] = 0
         remaining_ag_dist = dists[remaining_ag].mean(-1)
@@ -146,8 +160,9 @@ def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=No
 
         ag_order = np.array(continuing_ag_idx + remaining_ag)
         assert len(set(ag_order)) == M
-        joint_action_prev = np.array(ordered_joint_action, dtype=int)
+        joint_action_prev = np.array(best_ordered_joint_action, dtype=int)
 
+        agent_pos = agent_pos_new
         task_finished_bef = task_finished_aft
         g, ag_node_indices, _ = convert_dgl(graph, agent_pos, total_tasks, task_finished_bef)
         itr += 1

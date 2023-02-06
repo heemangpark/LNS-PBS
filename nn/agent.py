@@ -92,11 +92,9 @@ class Agent(nn.Module):
         gs, joint_action, ag_order, task_finished, next_t, terminated = self.replay_memory.episode_sample()
         bs = len(gs)
         gs = dgl.batch(gs)
-        # ag_order = torch.Tensor(ag_order)
 
         joint_action = torch.tensor(joint_action)
         all_action = joint_action.reshape(-1, 1)
-        # ag_order = torch.tensor(ag_order)
 
         next_t = torch.tensor(next_t)
 
@@ -108,6 +106,8 @@ class Agent(nn.Module):
 
         _logit = ((next_t - baseline).unsqueeze(-1) * _pol).mean(-1)
         loss = _logit.mean()
+        # _logit = (next_t - baseline).sum(-1) * _pol.sum()
+        # loss = _logit  # .mean()
         self.losses.append(loss)
 
         # behaved_agents = all_action < 20
