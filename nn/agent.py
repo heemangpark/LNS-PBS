@@ -70,9 +70,9 @@ class Agent(nn.Module):
         return out_action
 
     def get_policy(self, g):
-        feature = self.generate_feature(g)  # one-hot encoded feature 'type'
-        embeddings = self.embedding(feature)
-        out_nf = self.gnn(g, embeddings)
+        nf, ef = self.generate_feature(g)  # one-hot encoded feature 'type'
+        nf = self.embedding(nf)
+        out_nf = self.gnn(g, nf, ef)
         policy = self.bipartite_policy(g, out_nf)
         policy[:, -1] = 1e-5
 
@@ -81,12 +81,13 @@ class Agent(nn.Module):
     def generate_feature(self, g):
         # feature = torch.eye(3)[g.ndata['type']]
         # feature = torch.cat([feature, g.ndata['loc']], -1)
-        feature = g.ndata['loc']
-
+        nf = g.ndata['loc']
         if 'dist' not in g.edata.keys():
             g.apply_edges(lambda edges: {'dist': (abs(edges.src['loc'] - edges.dst['loc'])).sum(-1)})
 
-        return feature
+        ef = torch.stack([g.edata['dist'], g.edata['delay']], -1)
+
+        return nf, ef
 
     def fit(self, baseline=0):
         gs, joint_action, ag_order, task_finished, next_t, terminated = self.replay_memory.episode_sample()

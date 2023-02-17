@@ -21,10 +21,10 @@ class GNN(nn.Module):
 
         self.residual = residual
 
-    def forward(self, g, nf):
+    def forward(self, g, nf, ef):
         nf_prev = nf
         for layer in self.layers:
-            nf = layer(g, nf_prev)
+            nf = layer(g, nf_prev, ef)
             if self.residual:
                 nf_prev = nf + nf_prev
             else:
@@ -37,11 +37,12 @@ class GNNLayer(nn.Module):
         super(GNNLayer, self).__init__()
         self.node_embedding = nn.Sequential(nn.Linear(out_dim + in_dim, out_dim, bias=False),
                                             nn.LeakyReLU())
-        self.edge_embedding = nn.Sequential(nn.Linear(in_dim * 2 + 1, out_dim, bias=False),
+        self.edge_embedding = nn.Sequential(nn.Linear(in_dim * 2 + 2, out_dim, bias=False),
                                             nn.LeakyReLU())
 
-    def forward(self, g: dgl.DGLGraph, nf):
+    def forward(self, g: dgl.DGLGraph, nf, ef):
         g.ndata['nf'] = nf
+        g.edata['ef'] = ef
         task_node_idx = g.filter_nodes(task_node_func)
         g.push(u=task_node_idx,
                message_func=self.message_func,
@@ -50,10 +51,11 @@ class GNNLayer(nn.Module):
 
         out_nf = g.ndata.pop('out_nf')
         g.ndata.pop('nf')
+        g.edata.pop('ef')
         return out_nf
 
     def message_func(self, edges):
-        ef = torch.concat([edges.src['nf'], edges.dst['nf'], edges.data['dist'].view(-1, 1)], -1)
+        ef = torch.concat([edges.src['nf'], edges.dst['nf'], edges.data['ef']], -1)
         msg = self.edge_embedding(ef)
         return {'msg': msg}
 

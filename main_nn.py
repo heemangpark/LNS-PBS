@@ -10,24 +10,26 @@ from datetime import datetime
 from nn.ag_util import convert_dgl
 from nn.agent import Agent
 from utils.generate_scenarios import load_scenarios
-from utils.solver_util import save_map, save_scenario, read_trajectory
+from utils.solver_util import save_map, save_scenario, read_trajectory, compute_astar
 from utils.vis_graph import vis_ta
 
 solver_path = "EECBS/"
+dec_solver_path = "DecAstar/"
 
 
 def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=None, VISUALIZE=False, heuristic=False,
-                n_sample=5):
+                n_sample=1):
     scenario = load_scenarios(scenario_dir)
+    task_finished_bef = np.array([False for _ in range(N)])
     grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
     save_map(grid, exp_name)
+    shortest_paths = compute_astar(agent_pos, total_tasks, exp_name, task_finished_bef)
 
     itr = 0
     episode_timestep = 0
 
     # `task_finished` defined for each episode
-    task_finished_bef = np.array([False for _ in range(N)])
-    g, ag_node_indices, task_node_indices = convert_dgl(graph, agent_pos, total_tasks, task_finished_bef)
+    g, ag_node_indices, task_node_indices = convert_dgl(graph, agent_pos, total_tasks, task_finished_bef, shortest_paths)
     joint_action_prev = np.array([0] * M)
     ag_order = np.arange(M)
     continuing_ag = np.array([False for _ in range(M)])
@@ -42,7 +44,7 @@ def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=No
         best_joint_action = None
         max_T = 100
 
-        for sample in range(n_sample):
+        for _ in range(n_sample):
             curr_tasks = [[] for _ in range(M)]  # in order of init agent idx
             if heuristic:
                 joint_action = agent.forward_heuristic(g, ag_order, continuing_ag, joint_action_prev, sample=sample)
@@ -169,7 +171,8 @@ def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=No
 
         agent_pos = agent_pos_new
         task_finished_bef = task_finished_aft
-        g, ag_node_indices, _ = convert_dgl(graph, agent_pos, total_tasks, task_finished_bef)
+        shortest_paths = compute_astar(agent_pos, total_tasks, exp_name, task_finished_bef)
+        g, ag_node_indices, _ = convert_dgl(graph, agent_pos, total_tasks, task_finished_bef, shortest_paths)
         itr += 1
 
 
@@ -187,7 +190,7 @@ if __name__ == '__main__':
     best_perf = 1000000
 
     exp_name = datetime.now().strftime("%Y%m%d_%H%M")
-    wandb.init(project='etri-mapf', entity='curie_ahn', name=exp_name)
+    wandb.init(project='etri-mapf', entity='curie_ahn', name=exp_name + "_20")
 
     for e in range(epoch):
         epoch_perf = []

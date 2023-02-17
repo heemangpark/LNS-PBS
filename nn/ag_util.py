@@ -17,7 +17,7 @@ def process_graph(nx_g):
     return dgl_g
 
 
-def convert_dgl(nx_g, agent_pos, task_pos, task_finished=[]):
+def convert_dgl(nx_g, agent_pos, task_pos, task_finished=[], shortest_path=None):
     di_nx_g = nx.DiGraph(nx_g)
     node_idx_dict = dict()
 
@@ -60,8 +60,17 @@ def convert_dgl(nx_g, agent_pos, task_pos, task_finished=[]):
     bipartite_g.ndata['type'] = torch.cat([ag_type, task_type], -1)
     bipartite_g.ndata['loc'] = norm_locs[node_indices]
     bipartite_g.ndata['original_loc'] = all_locs[node_indices]
-    bipartite_g.apply_edges(
-        lambda edges: {'dist': (abs(edges.src['loc'] - edges.dst['loc'])).sum(-1)})
+
+    if shortest_path is None:
+        bipartite_g.apply_edges(
+            lambda edges: {'dist': (abs(edges.src['loc'] - edges.dst['loc'])).sum(-1)})
+    else:
+        bipartite_g.edata['dist'] = torch.from_numpy(shortest_path.T.reshape(-1)) / 32
+        bipartite_g.apply_edges(
+            lambda edges: {'dist_m': (abs(edges.src['loc'] - edges.dst['loc'])).sum(-1)})
+
+        # gap between the shortest path and heuristic
+        bipartite_g.edata['delay'] = bipartite_g.edata['dist'] - bipartite_g.edata['dist_m']
 
     # add dummy task
     bipartite_g.add_edges([n_ag + n_task] * n_ag, range(n_ag))

@@ -56,6 +56,8 @@ def save_scenarios(itr=1, size=32, obs=20, T=1, M=10, N=10, name=''):
             for d in datas:
                 pickle.dump(d, f)
 
+        f.close()
+
 
 def load_scenarios(dir):
     dir = scenario_dir + '/' + dir
@@ -70,5 +72,5 @@ def load_scenarios(dir):
 
     return data_list
 
-# if __name__ == "__main__":
-#     save_scenarios()
+if __name__ == "__main__":
+    save_scenarios(itr=20, size=32, obs=25, T=1, M=10, N=20, name='_eval')
