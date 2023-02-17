@@ -35,7 +35,7 @@ def convert_dgl(nx_g, agent_pos, task_pos, task_finished=[], shortest_path=None)
 
     node_indices = ag_node_indices + task_node_indices
     all_locs = torch.tensor(list(di_nx_g.nodes()))
-    norm_locs = all_locs / all_locs.max()
+    norm_locs = all_locs / 32
 
     # option 1. Astar cost (느림)
     # edge_cost = []
@@ -65,6 +65,7 @@ def convert_dgl(nx_g, agent_pos, task_pos, task_finished=[], shortest_path=None)
         bipartite_g.apply_edges(
             lambda edges: {'dist': (abs(edges.src['loc'] - edges.dst['loc'])).sum(-1)})
     else:
+        shortest_path = shortest_path - 1
         bipartite_g.edata['dist'] = torch.from_numpy(shortest_path.T.reshape(-1)) / 32
         bipartite_g.apply_edges(
             lambda edges: {'dist_m': (abs(edges.src['loc'] - edges.dst['loc'])).sum(-1)})

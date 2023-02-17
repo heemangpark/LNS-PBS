@@ -190,7 +190,7 @@ if __name__ == '__main__':
     best_perf = 1000000
 
     exp_name = datetime.now().strftime("%Y%m%d_%H%M")
-    wandb.init(project='etri-mapf', entity='curie_ahn', name=exp_name + "_20")
+    # wandb.init(project='etri-mapf', entity='curie_ahn', name=exp_name + "_20")
 
     for e in range(epoch):
         epoch_perf = []
