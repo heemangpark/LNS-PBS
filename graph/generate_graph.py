@@ -6,7 +6,7 @@ import numpy as np
 
 def gen_graph(size=32, obs=20, rand_coord=False):
     instance = np.zeros((size, size))
-    obstacle = np.random.random((size, size)) <= obs/100
+    obstacle = np.random.random((size, size)) <= obs / 100
     instance[obstacle] = 1
     g = tool(instance, rand_coord=rand_coord)
     components = [c for c in nx.connected_components(g)]
@@ -36,8 +36,8 @@ def tool(instance, rand_coord=False):
         rand_y /= rand_y.sum()
 
     else:
-        rand_x = np.array([0 + i / (n - 1) for i in range(m)])
-        rand_y = np.array([0 + i / (m - 1) for i in range(n)])
+        rand_x = np.array([i for i in range(m)])
+        rand_y = np.array([j for j in range(n)])
 
     xs = np.array(list(rand_x) * n)
     ys = rand_y[::-1].repeat(m)
@@ -51,8 +51,8 @@ def tool(instance, rand_coord=False):
         g.remove_node((r, c))
 
     for id, e_id in enumerate(g.edges()):
-        loc = (np.array(g.nodes[e_id[0]]['loc']) - np.array(g.nodes[e_id[1]]['loc'])) ** 2
-        dist = loc.sum(-1).reshape(-1, 1) ** .5
-        g.edges[e_id]['dist'] = dist
+        man = np.abs(g.nodes[e_id[0]]['loc'][0] - g.nodes[e_id[1]]['loc'][0]) + \
+              np.abs(g.nodes[e_id[0]]['loc'][1] - g.nodes[e_id[1]]['loc'][1])
+        g.edges[e_id]['dist'] = man
 
     return g

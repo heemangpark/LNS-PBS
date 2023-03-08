@@ -18,7 +18,7 @@ scenario_dir = os.path.join(Path(curr_path).parent.parent, 'scenarios')
 """
 
 
-def save_scenarios(itr=10, size=32, obs=20, T=1, M=10, N=10, map_seed=0):
+def save_scenarios(itr=100, size=20, obs=20, T=1, M=5, N=25):
     """
     T: task length -> if 2, tau=(s, g)
     M: the number of agents
@@ -26,7 +26,6 @@ def save_scenarios(itr=10, size=32, obs=20, T=1, M=10, N=10, map_seed=0):
     """
 
     instance, graph = gen_graph(size, obs)
-    # vis_graph(graph)
 
     for it in range(itr):
 
@@ -43,7 +42,7 @@ def save_scenarios(itr=10, size=32, obs=20, T=1, M=10, N=10, map_seed=0):
             tasks.append(np.array([t for t in graph])[temp_idx].tolist())
 
         datas = [instance, graph, agent_pos, tasks]
-        dir = scenario_dir + '/{}{}{}_{}_{}_{}_{}/'.format(size, size, obs, T, M, N, map_seed)
+        dir = scenario_dir + '/{}{}{}_{}_{}/'.format(size, size, obs, M, N)
 
         try:
             if not os.path.exists(dir):
@@ -71,4 +70,4 @@ def load_scenarios(dir):
 
 
 if __name__ == "__main__":
-    save_scenarios(itr=10000, size=20, M=10, N=50)
+    save_scenarios()

@@ -2,7 +2,7 @@ import random
 
 import matplotlib.pyplot as plt
 
-from LNS.hungarian import HA
+from LNS.hungarian import hungarian
 from LNS.regret import f_ijk, get_regret
 from LNS.shaw import removal
 from utils.generate_scenarios import load_scenarios
@@ -20,7 +20,7 @@ def test_lns(exp_repeat, lns_step, N):
 
     for _ in range(exp_repeat):
         soc_list, ms_list = list(), list()
-        task_idx, tasks = HA(graph, agent_pos, total_tasks)
+        task_idx, tasks = hungarian(graph, agent_pos, total_tasks)
 
         for _ in range(lns_step):
             removal_idx = removal(task_idx, total_tasks, graph, N=N)

@@ -10,7 +10,7 @@ import dgl
 import numpy as np
 import torch.optim
 
-from LNS.hungarian import HA
+from LNS.hungarian import hungarian
 from LNS.regret import f_ijk, get_regret
 from NLNS.policy_gnn import Policy_gnn
 from seq_solver import seq_solver
@@ -56,7 +56,7 @@ for epi in range(50000):
     bi_g.edata['co'] = torch.zeros(bi_g.num_edges())
 
     # generate initial solution and calculate its path costs
-    assign, assign_loc = HA(graph, origin_agents, origin_tasks)
+    assign, assign_loc = hungarian(graph, origin_agents, origin_tasks)
 
     s_in_tasks = [[] for _ in range(n_ag)]
     for a, t in assign_loc.items():

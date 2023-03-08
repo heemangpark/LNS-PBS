@@ -135,3 +135,23 @@ def grid_astar(grid, start, goal, w=1.0):
         # do nothing
         print(" fail to plan !")
     return output
+
+
+def greedy_paths(agents, graph, assign):
+    as_paths = [[tuple(agents[a])] for a in range(len(agents))]
+    for p in range(len(agents)):
+        as_paths[p] += graph_astar(graph, agents[p], assign[p][0])[0][1:-1]
+        for i, j in zip(assign[p][:-1], assign[p][1:]):
+            as_paths[p] += graph_astar(graph, i, j)[0][:-1]
+        as_paths[p] += [tuple(assign[p][-1])]
+    n_ag = len(as_paths)
+    max_len = max([len(p) for p in as_paths])
+    for p in range(len(as_paths)):
+        for p_l in range(len(as_paths[p])):
+            as_paths[p][p_l] = tuple(as_paths[p][p_l])
+    for t in range(len(as_paths)):
+        curr_path_l = len(as_paths[t])
+        for _ in range(max_len - curr_path_l):
+            as_paths[t].append(-t)
+    as_paths = np.array(as_paths, dtype=np.ndarray)
+    return as_paths

@@ -8,8 +8,9 @@ import numpy as np
 from utils.solver_util import save_map, save_scenario, read_trajectory
 
 curr_dir = os.path.realpath(__file__)
-solver_dir = os.path.join(Path(curr_dir).parent, 'EECBS/')
-name = 'sequential'
+solver_dir = os.path.join(Path(curr_dir).parent, 'EECBS/eecbs')
+file_dir = os.path.join(Path(curr_dir).parent, 'EECBS/exp/')
+exp_name = 'opt'
 
 
 def seq_solver(instance, agents, tasks, solver_params):
@@ -26,18 +27,18 @@ def seq_solver(instance, agents, tasks, solver_params):
                 s_tasks.append([list(a)])
             else:
                 s_tasks.append([t[0]])
-        save_map(instance, name)
-        save_scenario(s_agents, s_tasks, name, instance.shape[0], instance.shape[1])
+        save_map(instance, exp_name)
+        save_scenario(s_agents, s_tasks, exp_name, instance.shape[0], instance.shape[1])
 
-        c = [solver_dir + "eecbs",
+        c = [solver_dir,
              "-m",
-             solver_dir + name + '.map',
+             file_dir + exp_name + '.map',
              "-a",
-             solver_dir + name + '.scen',
+             file_dir + exp_name + '.scen',
              "-o",
-             solver_dir + name + ".csv",
+             file_dir + exp_name + ".csv",
              "--outputPaths",
-             solver_dir + name + "_paths_{}.txt".format(itr),
+             file_dir + exp_name + "_paths_{}.txt".format(itr),
              "-k", "{}".format(len(s_agents)),
              "-t", "{}".format(solver_params['time_limit']),
              "--suboptimality={}".format(solver_params['sub_op'])]
@@ -46,7 +47,7 @@ def seq_solver(instance, agents, tasks, solver_params):
         if text_byte[37:44] != 'Succeed':
             return 'error', 'error'
 
-        traj = read_trajectory(solver_dir + name + "_paths_{}.txt".format(itr))
+        traj = read_trajectory(file_dir + exp_name + "_paths_{}.txt".format(itr))
         len_traj = [len(t) - 1 for t in traj]
         d_len_traj = [l for l in len_traj if l not in {0}]
         next_t = np.min(d_len_traj)
