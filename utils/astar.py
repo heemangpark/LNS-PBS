@@ -22,6 +22,8 @@ class Node:
 def graph_astar(g, start, end):
     start = tuple(start)
     end = tuple(end)
+    if start == end:
+        return 0, 0
     path = list()
     path_cost = 0
     queue = list()
@@ -40,7 +42,7 @@ def graph_astar(g, start, end):
         for new_idx in g.neighbors(current_node.idx):
             node = Node(current_node, new_idx)
             node.g = current_node.g + 1
-            node.h = abs(np.array(g.nodes[node.idx]['loc']) - np.array(g.nodes[end_node.idx]['loc'])).sum().item()
+            node.h = abs(np.array(g.nodes[node.idx]['loc']) - np.array(g.nodes[end_node.idx]['loc'])).sum().item() * 31
             node.f = node.g + node.h
 
             if node in closepath:

@@ -14,7 +14,7 @@ class Agent(nn.Module):
 
         self.embedding = nn.Linear(2, embedding_dim)
         self.gnn = GNN(in_dim=embedding_dim, out_dim=embedding_dim, embedding_dim=embedding_dim, n_layers=gnn_layers,
-                       residual=True)
+                       residual=True, ef_dim=3)
         self.bipartite_policy = Bipartite(embedding_dim)
 
         self.replay_memory = ReplayMemory(capacity=memory_size, batch_size=batch_size)
@@ -85,7 +85,7 @@ class Agent(nn.Module):
         if 'dist' not in g.edata.keys():
             g.apply_edges(lambda edges: {'dist': (abs(edges.src['loc'] - edges.dst['loc'])).sum(-1)})
 
-        ef = torch.stack([g.edata['dist'], g.edata['delay']], -1)
+        ef = torch.stack([g.edata['dist'], g.edata['dist_m'], g.edata['delay']], -1)
 
         return nf, ef
 

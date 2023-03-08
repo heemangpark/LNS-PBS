@@ -9,14 +9,14 @@ FIN_TASK_type = 3
 
 
 class GNN(nn.Module):
-    def __init__(self, in_dim, out_dim, embedding_dim, n_layers, residual=False):
+    def __init__(self, in_dim, out_dim, embedding_dim, ef_dim, n_layers, residual=False):
         super(GNN, self).__init__()
         _ins = [in_dim] + [embedding_dim] * (n_layers - 1)
         _outs = [embedding_dim] * (n_layers - 1) + [out_dim]
 
         layers = []
         for _i, _o in zip(_ins, _outs):
-            layers.append(GNNLayer(_i, _o))
+            layers.append(GNNLayer(_i, _o, ef_dim))
         self.layers = nn.ModuleList(layers)
 
         self.residual = residual
@@ -33,11 +33,11 @@ class GNN(nn.Module):
 
 
 class GNNLayer(nn.Module):
-    def __init__(self, in_dim, out_dim):
+    def __init__(self, in_dim, out_dim, ef_dim):
         super(GNNLayer, self).__init__()
         self.node_embedding = nn.Sequential(nn.Linear(out_dim + in_dim, out_dim, bias=False),
                                             nn.LeakyReLU())
-        self.edge_embedding = nn.Sequential(nn.Linear(in_dim * 2 + 2, out_dim, bias=False),
+        self.edge_embedding = nn.Sequential(nn.Linear(in_dim * 2 + ef_dim, out_dim, bias=False),
                                             nn.LeakyReLU())
 
     def forward(self, g: dgl.DGLGraph, nf, ef):

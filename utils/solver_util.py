@@ -1,5 +1,7 @@
 import subprocess
 import numpy as np
+from utils.astar import graph_astar
+import time
 
 
 def save_map(grid, filename):
@@ -87,33 +89,20 @@ def read_trajectory(path_file_dir):
     return agent_traj
 
 
-def compute_astar(agent_pos, total_tasks, exp_name, task_finished_bef):
+def compute_astar(agent_pos, total_tasks, graph):
     dec_solver_path = "DecAstar/"
     n_ag = len(agent_pos)
     n_task = len(total_tasks)
 
     dists = []
-    for i in range(n_task):
-        if task_finished_bef[i]:
-            ts = [0] * n_ag
-        else:
-            save_scenario_dec(agent_pos, [total_tasks[i] for _ in range(n_ag)], exp_name)
-            dec_c = [dec_solver_path + "eecbs",
-                     "-m",
-                     dec_solver_path + exp_name + '.map',
-                     "-a",
-                     dec_solver_path + exp_name + '.scen',
-                     "-o",
-                     dec_solver_path + exp_name + ".csv",
-                     "--outputPaths",
-                     dec_solver_path + exp_name + "_paths.txt",
-                     "-k", str(len(agent_pos)), "-t", "0.1", "--suboptimality=10"]
-            subprocess.run(dec_c, capture_output=True)
-            agent_traj = read_trajectory(dec_solver_path + exp_name + "_paths.txt")
-            ts = [len(t) for t in agent_traj]
-        dists.append(ts)
+    for task in total_tasks:
+        temp = []
+        for ag in agent_pos:
+            _, dist = graph_astar(graph, ag, task[0])
+            temp.append(dist)
+        dists.append(temp)
 
-    return np.array(dists)
+    return np.array(dists) + 1
 
     # process_out_dec = subprocess.run(dec_c, capture_output=True)
     # text_byte_dec = process_out_dec.stdout.decode('utf-8')

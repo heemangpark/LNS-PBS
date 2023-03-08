@@ -13,23 +13,26 @@ from utils.generate_scenarios import load_scenarios
 from utils.solver_util import save_map, save_scenario, read_trajectory, compute_astar
 from utils.vis_graph import vis_ta
 
+RANDOM = True
 solver_path = "EECBS/"
 dec_solver_path = "DecAstar/"
 
 
 def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=None, VISUALIZE=False, heuristic=False,
                 n_sample=1):
+    actions = [[] for _ in range(10)]
     scenario = load_scenarios(scenario_dir)
     task_finished_bef = np.array([False for _ in range(N)])
     grid, graph, agent_pos, total_tasks = scenario[0], scenario[1], scenario[2], scenario[3]
     save_map(grid, exp_name)
-    shortest_paths = compute_astar(agent_pos, total_tasks, exp_name, task_finished_bef)
+    shortest_paths = compute_astar(agent_pos, total_tasks, graph)
 
     itr = 0
     episode_timestep = 0
 
     # `task_finished` defined for each episode
-    g, ag_node_indices, task_node_indices = convert_dgl(graph, agent_pos, total_tasks, task_finished_bef, shortest_paths)
+    g, ag_node_indices, task_node_indices = convert_dgl(graph, agent_pos, total_tasks, task_finished_bef,
+                                                        shortest_paths)
     joint_action_prev = np.array([0] * M)
     ag_order = np.arange(M)
     continuing_ag = np.array([False for _ in range(M)])
@@ -45,6 +48,10 @@ def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=No
         max_T = 100
 
         for _ in range(n_sample):
+            if itr > 1:
+                random.shuffle(remaining_ag_idx)
+                ag_order = np.array(continuing_ag_idx + remaining_ag_idx)
+
             curr_tasks = [[] for _ in range(M)]  # in order of init agent idx
             if heuristic:
                 joint_action = agent.forward_heuristic(g, ag_order, continuing_ag, joint_action_prev, sample=sample)
@@ -116,7 +123,11 @@ def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=No
         finished_task_idx = np.array(best_ordered_joint_action)[finished_ag]
         task_finished_aft = deepcopy(task_finished_bef)
         task_finished_aft[finished_task_idx] = True
-        episode_timestep += next_t
+        episode_timestep += next_t - 1
+
+        for i, _fin in enumerate(finished_ag):
+            if _fin:
+                actions[i].append(best_ordered_joint_action[i])
 
         # overwrite output
         agent_pos_new = deepcopy(agent_pos)
@@ -139,6 +150,7 @@ def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=No
                    task_finished=task_finished_aft)
 
         if terminated:
+            print(actions)
             return episode_timestep, itr
 
         # agent with small T maintains previous action
@@ -147,21 +159,25 @@ def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=No
         remaining_ag = list(set(range(M)) - set(continuing_ag_idx))
 
         # option 1. randomly select remaining ag
-        # random.shuffle(remaining_ag)
+        if RANDOM:
+            random.shuffle(remaining_ag)
+            remaining_ag_idx = remaining_ag
+        else:
+            # option 2. sort remaining ag by remaining task dist
+            dists = g.edata['dist'].reshape(-1, M).T
+            finished = task_finished_aft.nonzero()[0]
+            reserved = np.array(best_joint_action)[continuing_ag_idx]
+            dists[:, finished] = 9
+            dists[:, reserved] = 9
 
-        # option 2. sort remaining ag by remaining task dist
-        dists = g.edata['dist'].reshape(-1, M).T
-        finished = task_finished_aft.nonzero()[0]
-        reserved = np.array(best_joint_action)[continuing_ag_idx]
-        dists[:, finished] = 9
-        dists[:, reserved] = 9
+            # option 2-1 sort by mean
+            remaining_ag_dist = dists[remaining_ag].mean(-1)
+            # option 2-2 sort by min
+            # remaining_ag_dist = dists[remaining_ag, :-1].min(-1).values
 
-        # option 2-1 sort by mean
-        remaining_ag_dist = dists[remaining_ag].mean(-1)
-        # option 2-2 sort by min
-        # remaining_ag_dist = dists[remaining_ag, :-1].min(-1).values
-        remaining_order = remaining_ag_dist.sort().indices
-        remaining_ag_idx = np.array(remaining_ag)[remaining_order].tolist()
+            remaining_order = remaining_ag_dist.sort().indices
+            remaining_ag_idx = np.array(remaining_ag)[remaining_order].tolist()
+
         if type(remaining_ag_idx) == int:
             remaining_ag_idx = [remaining_ag_idx]
         # ========================
@@ -171,7 +187,7 @@ def run_episode(agent, M, N, exp_name, T_threshold, sample=True, scenario_dir=No
 
         agent_pos = agent_pos_new
         task_finished_bef = task_finished_aft
-        shortest_paths = compute_astar(agent_pos, total_tasks, exp_name, task_finished_bef)
+        shortest_paths = compute_astar(agent_pos, total_tasks, graph)
         g, ag_node_indices, _ = convert_dgl(graph, agent_pos, total_tasks, task_finished_bef, shortest_paths)
         itr += 1
 
@@ -185,12 +201,12 @@ if __name__ == '__main__':
     M, N = 10, 20
     T_threshold = 10  # N step fwd
     agent = Agent()
-    # agent.load_state_dict(torch.load('saved/20230201_1611.th'))
-    n_eval = 20
+    # agent.load_state_dict(torch.load('saved/20230220_1424.th'))
+    n_eval = 1
     best_perf = 1000000
 
     exp_name = datetime.now().strftime("%Y%m%d_%H%M")
-    # wandb.init(project='etri-mapf', entity='curie_ahn', name=exp_name + "_20")
+    wandb.init(project='etri-mapf', entity='curie_ahn', name=exp_name + "_20")
 
     for e in range(epoch):
         epoch_perf = []
