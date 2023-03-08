@@ -5,20 +5,16 @@ import numpy as np
 from utils.astar import graph_astar
 
 
-def removal(tasks_idx, tasks, graph, N=2):
+def removal(tasks_idx, task_pos, graph, N=2):
     t_idx = list()
     for v in tasks_idx.values():
-        if type(v) == np.int64:
-            t_idx.append(v)
-        else:
-            t_idx += v
-    t_idx = np.array(t_idx).reshape(-1).tolist()
+        t_idx.extend(v)
     chosen = random.choice(t_idx)
     t_idx.remove(chosen)
 
     rs = dict()
-    for r in t_idx:
-        rs[r] = relatedness(graph, tasks[chosen], tasks[r])
+    for t in t_idx:
+        rs[t] = relatedness(graph, task_pos[chosen], task_pos[t])
     sorted_r = dict(sorted(rs.items(), key=lambda x: x[1], reverse=True))
     removal_idx = [chosen] + [list(sorted_r.keys())[s] for s in range(N)]
 

@@ -359,12 +359,10 @@ def CE(info):
 
 
 def LNS(info):
-    task_idx, assign = info['lns_assign'][0], info['lns_assign'][1]
-    init_cost = info['init_cost']
+    task_idx, assign = info['lns_assign']
     results = []
 
     for itr in range(100):
-
         removal_idx = removal(task_idx, info['tasks'], info['graph'], N=2)
         for i, t in enumerate(assign.values()):
             for r in removal_idx:
@@ -415,8 +413,8 @@ if __name__ == '__main__':
         info['lns_assign'] = (assign_id, assign)
         info['init_cost'], info['init_routes'] = seq_solver(info['grid'], info['agents'], info['ce_assign'], [1, 1.2])
 
-        ce_results, ce_id = CE(info)
         lns_results = LNS(info)
+        ce_results, ce_id = CE(info)
 
         with open('exp_opt_{}.pkl'.format(exp_num), 'wb') as f:
             pickle.dump([ce_results, lns_results], f)
