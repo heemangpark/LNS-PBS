@@ -11,6 +11,7 @@ saved/
 
 # MAPF solvers
 EECBS/
+DecAstar/
 exp/
 RHCR/
 

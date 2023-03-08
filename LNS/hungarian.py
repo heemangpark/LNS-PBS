@@ -13,40 +13,35 @@ def cost_matrix(g, a, t):
     return m
 
 
-def hungarian(graph, agent_pos, tasks):
-    cm = cost_matrix(graph, agent_pos, tasks)
-    ag, assigned = linear_sum_assignment(cm)
-    task_idx = dict(zip(ag, assigned))
-    tasks_idx = list(range(len(tasks)))
-    unassigned_idx = list(set(tasks_idx) - set(assigned))
-    unassigned = [tasks[ut] for ut in unassigned_idx]
+def hungarian(graph, ag_pos_initial, task_pos):
+    cm_initial = cost_matrix(graph, ag_pos_initial, task_pos)
+    ag, assignment = linear_sum_assignment(cm_initial)
+    list_assignment = [[a] for a in assignment]
+    ret_dict = dict(zip(ag, list_assignment))
+    tasks_idx = list(range(len(task_pos)))
+    unassigned_idx = list(set(tasks_idx) - set(assignment))
 
-    first = True
-    while len(unassigned) != 0:
-        if first:
-            na = [tasks[t][-1] for t in task_idx.values()]
-        else:
-            na = [tasks[t[-1]][-1] for t in task_idx.values()]
-        cm = cost_matrix(graph, na, unassigned)
-        ag, assigned = linear_sum_assignment(cm)
-        assigned = [unassigned_idx[t_idx] for t_idx in assigned]
-        unassigned_idx = list(set(unassigned_idx) - set(assigned))
-        for a, t in zip(ag, assigned):
-            if type(task_idx[a]) == np.int64:
-                task_idx[a] = [task_idx[a]] + [t]
-                unassigned.remove(tasks[t])
-            else:
-                task_idx[a].append(t)
-                unassigned.remove(tasks[t])
-        first = False
+    while len(unassigned_idx) != 0:
+        ag_pos = [task_pos[t[-1]][-1] for t in ret_dict.values()]
+        unassigned_pos = [task_pos[idx] for idx in unassigned_idx]
+        cm = cost_matrix(graph, ag_pos, unassigned_pos)
+        ag, assignment = linear_sum_assignment(cm)
+
+        # update index
+        assignment = [unassigned_idx[t_idx] for t_idx in assignment]
+        # update unassigned idx
+        unassigned_idx = list(set(unassigned_idx) - set(assignment))
+        # append to ret dict
+        for a_idx, t_idx in zip(ag, assignment):
+            ret_dict[a_idx].append(t_idx)
 
     h_tasks = dict()
-    for k in task_idx.keys():
+    for k in ret_dict.keys():
         # h_tasks[k] = [{'s': [agent_pos[k].tolist()]}]
-        if type(list(task_idx.values())[k]) == np.int64:
-            i = list(task_idx.values())[k]
-            h_tasks[k] = [{i: tasks[i]}]
+        if type(list(ret_dict.values())[k]) == np.int64:
+            i = list(ret_dict.values())[k]
+            h_tasks[k] = [{i: task_pos[i]}]
         else:
-            h_tasks[k] = [{i: tasks[i]} for i in list(task_idx.values())[k]]
+            h_tasks[k] = [{i: task_pos[i]} for i in list(ret_dict.values())[k]]
 
-    return task_idx, h_tasks
+    return ret_dict, h_tasks
