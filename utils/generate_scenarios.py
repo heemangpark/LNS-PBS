@@ -18,7 +18,7 @@ scenario_dir = os.path.join(Path(curr_path).parent.parent, 'scenarios')
 """
 
 
-def save_scenarios(itr=100, size=20, obs=20, T=1, M=5, N=25):
+def save_scenarios(itr=10000, size=20, obs=20, T=1, M=5, N=25):
     """
     T: task length -> if 2, tau=(s, g)
     M: the number of agents

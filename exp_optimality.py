@@ -11,6 +11,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import routing_enums_pb2
+from tqdm import trange
 
 from LNS.hungarian import hungarian
 from LNS.regret import f_ijk, get_regret
@@ -87,11 +88,12 @@ def or_tools(mat):
         return output_solution(data, manager, routing, solution)
 
 
-def seq_solver(instance, agents, tasks, solver_params):
+def seq_solver(instance, agents, tasks, solver_params, ret_log=False):
+    time_log = dict()
     s_agents = copy.deepcopy(agents)
     todo = copy.deepcopy(tasks)
     seq_paths = [[list(agents[a])] for a in range(len(agents))]
-    total_cost, itr = 0, 0
+    total_cost, itr, T = 0, 0, 0
 
     while sum([len(t) for t in todo]) != 0:
         itr += 1
@@ -118,13 +120,16 @@ def seq_solver(instance, agents, tasks, solver_params):
              "--suboptimality={}".format(solver_params[1])]
         process_out = subprocess.run(c, capture_output=True)
         text_byte = process_out.stdout.decode('utf-8')
-        if text_byte[37:44] != 'Succeed':
+        if (text_byte[37:44] != 'Succeed') & ret_log:
+            return 'error', 'error', 'error'
+        elif text_byte[37:44] != 'Succeed':
             return 'error', 'error'
 
         traj = read_trajectory(save_dir + exp_name + "_paths_{}.txt".format(itr))
         len_traj = [len(t) - 1 for t in traj]
         d_len_traj = [l for l in len_traj if l not in {0}]
         next_t = np.min(d_len_traj)
+        T += next_t
 
         fin_id = list()
         for e, t in enumerate(traj):
@@ -140,6 +145,7 @@ def seq_solver(instance, agents, tasks, solver_params):
                     pass
                 else:
                     ag_to = todo[a_id].pop(0)
+                    time_log[tuple(ag_to)] = T
                     s_agents[a_id] = ag_to
             else:
                 if len_traj[a_id] == 0:
@@ -151,7 +157,11 @@ def seq_solver(instance, agents, tasks, solver_params):
 
         total_cost += next_t * len(d_len_traj)
 
-    return total_cost, seq_paths
+    # return total_cost, seq_paths, time_log if ret_log else total_cost, seq_paths
+    if ret_log:
+        return total_cost, seq_paths, time_log
+    else:
+        return total_cost, seq_paths
 
 
 def save_map(grid, filename):
@@ -297,8 +307,10 @@ def CE(info):
                 if max(_s1) >= len(a[swap_1]) or max(_s2) >= len(a[swap_2]):
                     pass
                 else:
-                    f_h, f_b, f_t = np.array(a[swap_1])[:min(_s1)], np.array(a[swap_1])[_s1], np.array(a[swap_1])[max(_s1) + 1:]
-                    s_h, s_b, s_t = np.array(a[swap_2])[:min(_s2)], np.array(a[swap_2])[_s2], np.array(a[swap_2])[max(_s2) + 1:]
+                    f_h, f_b, f_t = np.array(a[swap_1])[:min(_s1)], np.array(a[swap_1])[_s1], np.array(a[swap_1])[
+                                                                                              max(_s1) + 1:]
+                    s_h, s_b, s_t = np.array(a[swap_2])[:min(_s2)], np.array(a[swap_2])[_s2], np.array(a[swap_2])[
+                                                                                              max(_s2) + 1:]
 
                     test_a = copy.deepcopy(a)
                     test_a[swap_1] = np.concatenate([f_h, s_b, f_t]).tolist()
@@ -358,32 +370,44 @@ def CE(info):
     return results, check_swap
 
 
-def LNS(info):
+def LNS(info, exp_num):
     task_idx, assign = info['lns_assign']
     results = []
+    time_log = None
+    final_log = [[], []]
 
     for itr in range(100):
-        removal_idx = removal(task_idx, info['tasks'], info['graph'], N=2)
+        removal_idx = removal(task_idx, info['tasks'], info['graph'], N=2, time_log=time_log)
         for i, t in enumerate(assign.values()):
             for r in removal_idx:
                 if {r: info['tasks'][r]} in t:
                     assign[i].remove({r: info['tasks'][r]})
 
+        save_dict = {}
         while len(removal_idx) != 0:
-            f = f_ijk(assign, info['agents'], removal_idx, info['tasks'], info['graph'])
-            regret = get_regret(f)
+            f_val = f_ijk(assign, info['agents'], removal_idx, info['tasks'], info['graph'])
+            regret = get_regret(f_val)
             regret = dict(sorted(regret.items(), key=lambda x: x[1][0], reverse=True))
             re_ins = list(regret.keys())[0]
             re_a, re_j = regret[re_ins][1], regret[re_ins][2]
             removal_idx.remove(re_ins)
             to_insert = {re_ins: info['tasks'][re_ins]}
             assign[re_a].insert(re_j, to_insert)
+            save_dict[re_ins] = regret[re_ins]
 
-        cost, _ = seq_solver(info['grid'], info['agents'], to_solver(info['tasks'], assign), [1, 1.2])
+        final_log[0].append(save_dict)
+
+        cost, _, time_log = seq_solver(info['grid'], info['agents'], to_solver(info['tasks'], assign), [1, 1.2],
+                                       ret_log=True)
         if cost == 'error':
             pass
         else:
             results.append(cost)
+
+    final_log[1].append(results)
+
+    with open(data_save_dir + 'mid_{}.pkl'.format(exp_num), 'wb') as f:
+        pickle.dump(final_log, f)
 
     return results
 
@@ -394,46 +418,57 @@ if __name__ == '__main__':
     # mode = 'plot'
 
     if mode == 'exp':
-        exp_num = 1
-        curr_dir = os.path.realpath(__file__)
-        solver_dir = os.path.join(Path(curr_dir).parent, 'EECBS/eecbs')
-        save_dir = os.path.join(Path(curr_dir).parent, 'EECBS/exp_{}/'.format(exp_num))
-        exp_name = 'eval_select'
+        for exp_num in trange(250, 10001):
+            # exp_num = 1
+            curr_dir = os.path.realpath(__file__)
+            solver_dir = os.path.join(Path(curr_dir).parent, 'EECBS/eecbs')
+            save_dir = os.path.join(Path(curr_dir).parent, 'EECBS/exp_{}/'.format(exp_num))
+            data_save_dir = os.path.join(Path(curr_dir).parent, 'exp_{}/'.format(exp_num))
+            exp_name = 'eval_select'
 
-        try:
-            if not os.path.exists(save_dir):
-                os.makedirs(save_dir)
-        except OSError:
-            print("Error: Cannot create the directory.")
+            try:
+                if not os.path.exists(save_dir):
+                    os.makedirs(save_dir)
+            except OSError:
+                print("Error: Cannot create the directory.")
 
-        scenario = load_scenarios('202020_5_25/scenario_{}.pkl'.format(exp_num))
-        info = {'grid': scenario[0], 'graph': scenario[1], 'agents': scenario[2], 'tasks': scenario[3]}
-        assign_id, assign = hungarian(info['graph'], info['agents'], info['tasks'])
-        info['ce_assign'] = to_solver(info['tasks'], assign)
-        info['lns_assign'] = (assign_id, assign)
-        info['init_cost'], info['init_routes'] = seq_solver(info['grid'], info['agents'], info['ce_assign'], [1, 1.2])
+            try:
+                if not os.path.exists(data_save_dir):
+                    os.makedirs(data_save_dir)
+            except OSError:
+                print("Error: Cannot create the directory.")
 
-        lns_results = LNS(info)
-        ce_results, ce_id = CE(info)
+            scenario = load_scenarios('202020_5_25/scenario_{}.pkl'.format(exp_num))
+            info = {'grid': scenario[0], 'graph': scenario[1], 'agents': scenario[2], 'tasks': scenario[3]}
+            assign_id, assign = hungarian(info['graph'], info['agents'], info['tasks'])
+            info['ce_assign'] = to_solver(info['tasks'], assign)
+            info['lns_assign'] = (assign_id, assign)
+            info['init_cost'], info['init_routes'] = seq_solver(info['grid'], info['agents'], info['ce_assign'],
+                                                                [1, 1.2])
 
-        with open('exp_opt_{}.pkl'.format(exp_num), 'wb') as f:
-            pickle.dump([ce_results, lns_results], f)
+            with open(data_save_dir + 'init_{}.pkl'.format(exp_num), 'wb') as f:
+                pickle.dump([info], f)
 
-        try:
-            if os.path.exists(save_dir):
-                shutil.rmtree(save_dir)
-        except OSError:
-            print("Error: Cannot remove the directory.")
+            lns_results = LNS(info, exp_num)
+
+            with open('exp_opt_{}.pkl'.format(exp_num), 'wb') as f:
+                pickle.dump([lns_results], f)
+
+            try:
+                if os.path.exists(save_dir):
+                    shutil.rmtree(save_dir)
+            except OSError:
+                print("Error: Cannot remove the directory.")
 
     elif mode == 'plot':
         plot_num = 1
         with open('exp_opt_{}.pkl'.format(plot_num), 'rb') as f:
             data = pickle.load(f)
-        plt.plot(np.arange(100), data[0], label='cross exchange')
-        plt.plot(np.arange(100), data[1], label='lns')
+        # plt.plot(np.arange(100), data[0], label='cross exchange')
+        plt.plot(np.arange(100), data[0], label='lns')
         plt.xlabel('iteration'), plt.ylabel('route length')
         plt.legend(loc='upper right')
-        plt.savefig('202020_5_15_{}.png'.format(plot_num))
+        plt.savefig('{}.png'.format(plot_num))
 
     else:
         raise NotImplementedError
