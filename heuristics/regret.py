@@ -2,7 +2,7 @@ from copy import deepcopy
 
 import numpy as np
 
-from utils.astar import graph_astar
+from utils.astar_utils import graph_astar
 
 
 def f_ijk(current_tasks, agent_pos, removal_idx, total_tasks, graph):

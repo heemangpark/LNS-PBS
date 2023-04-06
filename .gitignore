@@ -4,19 +4,15 @@ __pycache__/
 .ipynb_checkpoints/
 
 # datasets
-data/
-fig/
+dataset/
 scenarios/
-saved/
 
 # MAPF solvers
 EECBS/
-DecAstar/
-exp/
-RHCR/
 
 *.ipynb
 *.png
 *.txt
 *.th
 *.csv
+*.xlsx

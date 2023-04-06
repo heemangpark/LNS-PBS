@@ -1,12 +1,13 @@
 import os
-import os.path
 import pickle
 import random
+import sys
 from pathlib import Path
 
 import numpy as np
 
-from graph.generate_graph import gen_graph
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+from utils.graph_utils import validGraph
 
 curr_path = os.path.realpath(__file__)
 scenario_dir = os.path.join(Path(curr_path).parent.parent, 'scenarios')
@@ -18,31 +19,25 @@ scenario_dir = os.path.join(Path(curr_path).parent.parent, 'scenarios')
 """
 
 
-def save_scenarios(itr=10000, size=20, obs=20, T=1, M=5, N=25):
-    """
-    T: task length -> if 2, tau=(s, g)
-    M: the number of agents
-    N: the number of tasks
-    """
+def save_scenarios(itrs=100, size=32, obs=20, T=1, a=10, t=20):
+    instance, graph = validGraph(size, obs)
 
-    instance, graph = gen_graph(size, obs)
-
-    for it in range(itr):
+    for itr in range(9957, itrs):
 
         empty_idx = list(range(len(graph)))
-        agent_idx = random.sample(empty_idx, M)
-        tasks_len = [1 for _ in range(N)] if T == 1 else random.choices(list(range(1, T + 1)), k=N)
+        agent_idx = random.sample(empty_idx, a)
+        tasks_len = [1 for _ in range(t)] if T == 1 else random.choices(list(range(1, T + 1)), k=t)
         agent_pos = np.array([a for a in graph])[agent_idx]
         empty_idx = list(set(empty_idx) - set(agent_idx))
 
         tasks = list()
-        for i in range(N):
+        for i in range(t):
             temp_idx = random.sample(empty_idx, tasks_len[i])
             empty_idx = list(set(empty_idx) - set(temp_idx))
             tasks.append(np.array([t for t in graph])[temp_idx].tolist())
 
         datas = [instance, graph, agent_pos, tasks]
-        dir = scenario_dir + '/{}{}{}_{}_{}/'.format(size, size, obs, M, N)
+        dir = scenario_dir + '/{}{}{}_{}_{}_extra/'.format(size, size, obs, a, t)
 
         try:
             if not os.path.exists(dir):
@@ -50,7 +45,7 @@ def save_scenarios(itr=10000, size=20, obs=20, T=1, M=5, N=25):
         except OSError:
             print("Error: Cannot create the directory.")
 
-        with open(dir + 'scenario_{}.pkl'.format(it + 1), 'wb') as f:
+        with open(dir + 'scenario_{}.pkl'.format(itr), 'wb') as f:
             for d in datas:
                 pickle.dump(d, f)
 
@@ -70,4 +65,4 @@ def load_scenarios(dir):
 
 
 if __name__ == "__main__":
-    save_scenarios()
+    save_scenarios(itrs=10000, size=32, obs=20, T=1, a=5, t=50)
