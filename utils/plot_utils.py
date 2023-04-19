@@ -16,7 +16,7 @@ def comparing_plot(plot_num):
             pass
         else:
             plt.plot(np.arange(len(data[0])), data[0], label='SL_LNS')
-            plt.plot(np.arange(len(data[1])), data[1], label='rand_LNS')
+            plt.plot(np.arange(len(data[1])), data[1], label='LNS')
             plt.xlabel('iteration'), plt.ylabel('route length')
             plt.legend(loc='upper right')
             plt.savefig('fig_{}.png'.format(pn))
@@ -25,4 +25,4 @@ def comparing_plot(plot_num):
             N_gap += (data[0][0] - data[0][-1]) / data[0][0] * 100
             rand_gap += (data[1][0] - data[1][-1]) / data[1][0] * 100
 
-    print('SL_LNS: {} | rand_LNS: {}'.format(N_gap / plot_num, rand_gap / plot_num))
+    print('SL_LNS: {} | LNS: {}'.format(N_gap / plot_num, rand_gap / plot_num))

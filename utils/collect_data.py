@@ -16,17 +16,7 @@ from heuristics.regret import f_ijk, get_regret
 from heuristics.shaw import removal
 from utils.graph_utils import sch_to_nx
 from utils.scenario_utils import load_scenarios
-from utils.solver_utils import to_solver, solver
-
-
-def assignment_to_id(n_ag, assignment):
-    keys, values = [], [[] for _ in range(n_ag)]
-    for ag_idx, tasks in enumerate(assignment.values()):
-        keys.append(ag_idx)
-        for task in tasks:
-            values[ag_idx].append(list(task.keys())[0])
-    assign_id = dict(zip(keys, values))
-    return assign_id
+from utils.solver_utils import to_solver, solver, assignment_to_id
 
 
 def LNS(info, exp_num, dirs=None):
@@ -78,12 +68,12 @@ def LNS(info, exp_num, dirs=None):
             assign_id = assignment_to_id(len(info['agents']), assign)
             assign_id_list.append(assign_id)
 
-            coordinations = [[a] for a in info['agents'].tolist()]
+            coordination = [[a] for a in info['agents'].tolist()]
             for i, coords in enumerate(assign.values()):
                 temp_schedule = [list(c.values())[0][0] for c in coords]
-                coordinations[i].extend(temp_schedule)
+                coordination[i].extend(temp_schedule)
 
-            graph = sch_to_nx(coordinations, info['graph'])
+            graph = sch_to_nx(coordination, info['graph'])
             graph_list.append(graph)
 
         else:
@@ -128,12 +118,12 @@ def collect(exp_num):
     if info['init_cost'] == 'error':
         return 'abandon_seed'
 
-    coordinations = [[a] for a in info['agents'].tolist()]
+    coordination = [[a] for a in info['agents'].tolist()]
     for i, coords in enumerate(assign.values()):
         temp_schedule = [list(c.values())[0][0] for c in coords]
-        coordinations[i].extend(temp_schedule)
+        coordination[i].extend(temp_schedule)
 
-    info['init_graph'] = sch_to_nx(coordinations, info['graph'])
+    info['init_graph'] = sch_to_nx(coordination, info['graph'])
 
     LNS(info, exp_num, dirs=dirs)
 

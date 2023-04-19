@@ -9,7 +9,7 @@ import wandb as w
 from tqdm import trange
 
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
-from nn.agent import NeuroRepair
+from nn.repair_agent import NeuroRepair
 
 wandb = False
 if wandb:
@@ -17,8 +17,8 @@ if wandb:
 
 data_save_dir = os.path.join(Path(os.path.realpath(__file__)).parent, 'dataset/')
 file_list = list(os.walk(data_save_dir))[0][-1]
-file_tags = sorted([int(file.split('dataset')[1].split('.')[0]) for file in file_list])
-sorted_file_list = ['dataset_{}.pkl'.format(f_id) for f_id in file_tags]
+file_tags = sorted([int(file.split('data_')[1].split('.')[0]) for file in file_list])
+sorted_file_list = ['data_{}.pkl'.format(f_id) for f_id in file_tags]
 
 model = NeuroRepair()
 

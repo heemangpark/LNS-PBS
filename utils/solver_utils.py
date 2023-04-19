@@ -148,3 +148,22 @@ def solver(instance, agents, tasks, ret_log=False, dirs=None):
         return total_cost, seq_paths, time_log
     else:
         return total_cost, seq_paths
+
+
+def assignment_to_id(n_ag, assignment):
+    keys, values = [], [[] for _ in range(n_ag)]
+    for ag_idx, tasks in enumerate(assignment.values()):
+        keys.append(ag_idx)
+        for task in tasks:
+            values[ag_idx].append(list(task.keys())[0])
+    assign_id = dict(zip(keys, values))
+    return assign_id
+
+
+def id_to_assignment(assign_id, task_coords):
+    id = copy.deepcopy(assign_id)
+    for a in id.keys():
+        for idx, t_id in enumerate(id[a]):
+            id[a][idx] = {t_id: task_coords[t_id]}
+
+    return id
