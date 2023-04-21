@@ -124,15 +124,23 @@ def createGraph(instance, rand_coord=False):
     return g
 
 
-def sch_to_nx(coord_schedule, graph):
+def sch_to_nx(assign_id, coord_schedule, graph):
     coords = [item for sublist in coord_schedule for item in sublist]
     sch_nx = nx.complete_graph(len(coords))
     nx.set_node_attributes(sch_nx, dict(zip(sch_nx.nodes, coords)), 'coord')
+
     AG_type, TASK_type = 1, 2
     types = []
     for c in coord_schedule:
         types.extend([AG_type] + [TASK_type for _ in range(len(c) - 1)])
     nx.set_node_attributes(sch_nx, dict(zip(sch_nx.nodes, types)), 'type')
+
+    graph_assign_id = []
+    for idx in assign_id.values():
+        graph_assign_id.extend([-1] + idx)
+    nx.set_node_attributes(sch_nx, dict(zip(sch_nx.nodes, graph_assign_id)), 'idx')
+
+    nx.set_node_attributes(sch_nx, dict(zip(sch_nx.nodes, range(sch_nx.number_of_nodes()))), 'graph_id')
 
     a_dist = [int(graph_astar(graph, coords[i], coords[j])[1]) for i, j in sch_nx.edges]
     dist = [np.abs(coords[i][0] - coords[j][0]) + np.abs(coords[i][1] - coords[j][1]) for i, j in sch_nx.edges]

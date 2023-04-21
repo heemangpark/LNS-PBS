@@ -38,7 +38,7 @@ class env_LNS:
         info['lns'] = assign_id, assign
 
         routes = to_solver(info['tasks'], assign)
-        info['init_cost'], info['init_routes'] = solver(info['grid'], info['agents'], routes, dirs=env_dirs)
+        info['init_cost'], info['init_routes'] = solver(info['grid'], info['agents'], routes, dir=env_dirs)
 
         self.grid = info['graph']
         self.ag_loc = info['agents']
@@ -72,7 +72,7 @@ class env_LNS:
             to_insert = {re_ins: self.task_loc[re_ins]}
             self.assign[re_a].insert(re_j, to_insert)
 
-        cost, _ = solver(self.grid, self.ag_loc, to_solver(self.task_loc, self.assign), dirs=self.dirs)
+        cost, _ = solver(self.grid, self.ag_loc, to_solver(self.task_loc, self.assign), dir=self.dirs)
 
         if cost == 'error':
             state, reward, done = 'solver_error', 'solver_error', 'solver_error'

@@ -55,7 +55,7 @@ def LNS(info, exp_num, dirs=None):
             temp_assign[re_a].insert(re_j, to_insert)
 
         cost, _, time_log = solver(info['grid'], info['agents'], to_solver(info['tasks'], temp_assign),
-                                   ret_log=True, dirs=dirs)
+                                   ret_log=True, dir=dirs)
         if cost == 'error':
             return 'error'
 
@@ -73,7 +73,7 @@ def LNS(info, exp_num, dirs=None):
                 temp_schedule = [list(c.values())[0][0] for c in coords]
                 coordination[i].extend(temp_schedule)
 
-            graph = sch_to_nx(coordination, info['graph'])
+            graph = sch_to_nx(assign_id, coordination, info['graph'])
             graph_list.append(graph)
 
         else:
@@ -114,7 +114,7 @@ def collect(exp_num):
     routes = to_solver(info['tasks'], assign)
 
     info['lns'] = assign_id, assign
-    info['init_cost'], info['init_routes'] = solver(info['grid'], info['agents'], routes, dirs=dirs)
+    info['init_cost'], info['init_routes'] = solver(info['grid'], info['agents'], routes, dir=dirs)
     if info['init_cost'] == 'error':
         return 'abandon_seed'
 

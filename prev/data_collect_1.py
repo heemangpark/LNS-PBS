@@ -42,7 +42,7 @@ def LNS(info, exp_num, itrs, N, neigh='relative', dirs=None):
             temp_assign[re_a].insert(re_j, to_insert)
 
         cost, _, time_log = solver(info['grid'], info['agents'], to_solver(info['tasks'], temp_assign),
-                                   ret_log=True, dirs=dirs)
+                                   ret_log=True, dir=dirs)
         if cost == 'error':
             pass
 
@@ -90,7 +90,7 @@ def collect(exp_num):
     dgl.save_graphs(data_save_dir + 'sch_space_{}.pkl'.format(exp_num), sch_space)
 
     info['assign'] = (assign_id, assign)
-    info['init_cost'], info['init_routes'] = solver(info['grid'], info['agents'], routes, dirs=dirs)
+    info['init_cost'], info['init_routes'] = solver(info['grid'], info['agents'], routes, dir=dirs)
 
     with open(data_save_dir + 'prev_{}.pkl'.format(exp_num), 'wb') as p:
         pickle.dump(assign_id, p)

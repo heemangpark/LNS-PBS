@@ -73,8 +73,8 @@ def to_solver(task_in_seq, assignment):
     return s_in_tasks
 
 
-def solver(instance, agents, tasks, ret_log=False, dirs=None):
-    solver_dir, save_dir, exp_name = dirs[0], dirs[1], dirs[3]
+def solver(instance, agents, tasks, ret_log=False, dir=None):
+    solver_dir, save_dir, exp_name = dir[0], dir[1], dir[2]
 
     time_log = dict()
     s_agents = copy.deepcopy(agents)

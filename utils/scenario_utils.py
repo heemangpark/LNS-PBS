@@ -37,7 +37,7 @@ def save_scenarios(itrs=100, size=32, obs=20, T=1, a=10, t=20):
             tasks.append(np.array([t for t in graph])[temp_idx].tolist())
 
         datas = [instance, graph, agent_pos, tasks]
-        dir = scenario_dir + '/{}{}{}_{}_{}/'.format(size, size, obs, a, t)
+        dir = scenario_dir + '/{}{}{}_{}_{}_eval/'.format(size, size, obs, a, t)
 
         try:
             if not os.path.exists(dir):
@@ -65,4 +65,4 @@ def load_scenarios(dir):
 
 
 if __name__ == "__main__":
-    save_scenarios(itrs=1000, size=64, obs=20, T=1, a=5, t=50)
+    save_scenarios(itrs=100, size=64, obs=20, T=1, a=5, t=50)
