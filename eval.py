@@ -66,7 +66,14 @@ def rLNS(info, dir):
 
     for itr in range(100):
         temp_assign = copy.deepcopy(assign)
-        removal_idx = removal(task_idx, info['tasks'], info['graph'], N=2, time_log=time_log, neighbors='random')
+        removal_idx = removal(
+            task_idx,
+            info['tasks'],
+            info['graph'],
+            N=2,
+            time_log=time_log,
+            neighbors='random',
+        )
         if removal_idx == 'stop':
             return 'stop'
         for i, t in enumerate(temp_assign.values()):
@@ -113,7 +120,14 @@ def bLNS(info, dir):
 
     for itr in range(100):
         temp_assign = copy.deepcopy(assign)
-        removal_idx = removal(task_idx, info['tasks'], info['graph'], N=9, time_log=time_log, neighbors='relative')
+        removal_idx = removal(
+            task_idx,
+            info['tasks'],
+            info['graph'],
+            N=9,
+            time_log=time_log,
+            neighbors='relative'
+        )
         if removal_idx == 'stop':
             return 'stop'
         for i, t in enumerate(temp_assign.values()):
@@ -160,7 +174,14 @@ def LNS(info, dir):
 
     for itr in range(100):
         temp_assign = copy.deepcopy(assign)
-        removal_idx = removal(task_idx, info['tasks'], info['graph'], N=2, time_log=time_log, neighbors='relative')
+        removal_idx = removal(
+            task_idx,
+            info['tasks'],
+            info['graph'],
+            N=2,
+            time_log=time_log,
+            neighbors='relative'
+        )
         if removal_idx == 'stop':
             return 'stop'
         for i, t in enumerate(temp_assign.values()):
@@ -238,7 +259,7 @@ def run(dir):
 
 
 if __name__ == '__main__':
-    eval = True
+    eval = False
 
     if eval:
         for total_exp in trange(10):
@@ -265,4 +286,4 @@ if __name__ == '__main__':
                 pass
 
     else:
-        comparing_plot(100)
+        comparing_plot(30)
