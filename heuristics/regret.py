@@ -5,7 +5,7 @@ import numpy as np
 from utils.astar_utils import graph_astar
 
 
-def f_ijk(current_tasks, agent_pos, removal_idx, total_tasks, graph):
+def f_ijk(current_tasks, agent_pos, removal_idx, total_tasks, graph, metric='man'):
     n_ag = len(agent_pos)
 
     before_cost = []
@@ -16,13 +16,19 @@ def f_ijk(current_tasks, agent_pos, removal_idx, total_tasks, graph):
             for _b in _a.values():
                 b_path += _b
 
-        #   Initial segment
-        edge_cost = 0 if len(b_path) == 0 else graph_astar(graph, agent_pos[ag_idx], b_path[0])[1]
+        # Initial segment
+        if metric == 'man':
+            edge_cost = 0 if len(b_path) == 0 else manhattan(agent_pos[ag_idx], b_path[0])
+        else:
+            edge_cost = 0 if len(b_path) == 0 else graph_astar(graph, agent_pos[ag_idx], b_path[0])[1]
         before_edge_cost[ag_idx].append(edge_cost)
 
         # Edge cost
         for _s, _g in zip(b_path[:-1], b_path[1:]):
-            edge_cost = graph_astar(graph, _s, _g)[1]
+            if metric == 'man':
+                edge_cost = manhattan(_s, _g)
+            else:
+                edge_cost = graph_astar(graph, _s, _g)[1]
             before_edge_cost[ag_idx].append(edge_cost)
 
         path_cost = sum(before_edge_cost[ag_idx])
@@ -36,7 +42,6 @@ def f_ijk(current_tasks, agent_pos, removal_idx, total_tasks, graph):
             f_list = list()
             for j in range(len(ats) + 1):
                 temp = deepcopy(ats)
-                # temp.insert(j, {i: rt})
                 path = list()
                 for a in temp:
                     for task_pos in a.values():
@@ -44,21 +49,30 @@ def f_ijk(current_tasks, agent_pos, removal_idx, total_tasks, graph):
 
                 if j == 0:
                     f_value = sum(before_edge_cost[k][1:])
-                    f_value += graph_astar(graph, agent_pos[k], rt[0])[1]
-                    f_value += graph_astar(graph, rt[0], path[0])[1]
+                    if metric == 'man':
+                        f_value += manhattan(agent_pos[k], rt[0])
+                        f_value += manhattan(rt[0], path[0])
+                    else:
+                        f_value += graph_astar(graph, agent_pos[k], rt[0])[1]
+                        f_value += graph_astar(graph, rt[0], path[0])[1]
+
                 elif j == len(ats):
                     f_value = sum(before_edge_cost[k])
-                    f_value += graph_astar(graph, path[-1], rt[0])[1]
+
+                    if metric == 'man':
+                        f_value += manhattan(path[-1], rt[0])
+                    else:
+                        f_value += graph_astar(graph, path[-1], rt[0])[1]
+
                 else:
                     f_value = sum(before_edge_cost[k]) - before_edge_cost[k][j]
-                    f_value += graph_astar(graph, path[j - 1], rt[0])[1]
-                    f_value += graph_astar(graph, rt[0], path[j])[1]
+                    if metric == 'man':
+                        f_value += manhattan(path[j - 1], rt[0])
+                        f_value += manhattan(rt[0], path[j])
+                    else:
+                        f_value += graph_astar(graph, path[j - 1], rt[0])[1]
+                        f_value += graph_astar(graph, rt[0], path[j])[1]
 
-                # f_value = graph_astar(graph, agent_pos[k], path[0])[1]
-                # for s, g in zip(path[:-1], path[1:]):
-                #     f_value += graph_astar(graph, s, g)[1]
-                # for o in current_tasks.keys() - [k]:
-                #     f_value += before_cost[o]
                 f_list.append(f_value)
             f[i].append(f_list)
 
@@ -81,3 +95,9 @@ def get_regret(f_values):
         regret[removal_idx] = [v[1] - v[0], a, j]
 
     return regret
+
+
+def manhattan(coord_1, coord_2):
+    x = abs(list(coord_1)[0] - list(coord_2)[0])
+    y = abs(list(coord_1)[1] - list(coord_2)[1])
+    return x + y

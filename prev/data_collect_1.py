@@ -23,7 +23,7 @@ def LNS(info, exp_num, itrs, N, neigh='relative', dirs=None):
 
     for itr in range(itrs):
         temp_assign = copy.copy(assign)
-        removal_idx = removal(task_idx, info['tasks'], info['graph'], N=N, time_log=time_log, neigh=neigh)
+        removal_idx = removal(task_idx, info['tasks'], info['graph'], N=N, time_log=time_log, neighbors=neigh)
         if removal_idx == 'stop':
             return 'stop'
         for i, t in enumerate(temp_assign.values()):

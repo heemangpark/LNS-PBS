@@ -34,7 +34,7 @@ def LNS(info, exp_num, dirs=None):
 
     for itr in range(100):
         temp_assign = copy.deepcopy(assign)
-        removal_idx = removal(assign_id, info['tasks'], info['graph'], N=2, time_log=time_log, neigh='relative')
+        removal_idx = removal(assign_id, info['tasks'], info['graph'], N=2, time_log=time_log, neighbors='relative')
         r_idx = copy.deepcopy(removal_idx)
         removal_list.append(r_idx)
         if removal_idx == 'stop':

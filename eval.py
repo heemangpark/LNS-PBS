@@ -32,7 +32,7 @@ def NLNS(info, graph, dir):
     time_log = None
 
     for itr in range(100):
-        removal_idx = removal(task_idx, info['tasks'], info['graph'], N=2, time_log=time_log, neigh='relative')
+        removal_idx = removal(task_idx, info['tasks'], info['graph'], N=2, time_log=time_log, neighbors='relative')
         if removal_idx == 'stop':
             return 'stop'
         task_idx = model.eval(assignment_to_id(len(info['tasks']), assign), graph, removal_idx)
@@ -66,7 +66,7 @@ def rLNS(info, dir):
 
     for itr in range(100):
         temp_assign = copy.deepcopy(assign)
-        removal_idx = removal(task_idx, info['tasks'], info['graph'], N=2, time_log=time_log, neigh='random')
+        removal_idx = removal(task_idx, info['tasks'], info['graph'], N=2, time_log=time_log, neighbors='random')
         if removal_idx == 'stop':
             return 'stop'
         for i, t in enumerate(temp_assign.values()):
@@ -113,7 +113,7 @@ def bLNS(info, dir):
 
     for itr in range(100):
         temp_assign = copy.deepcopy(assign)
-        removal_idx = removal(task_idx, info['tasks'], info['graph'], N=9, time_log=time_log, neigh='relative')
+        removal_idx = removal(task_idx, info['tasks'], info['graph'], N=9, time_log=time_log, neighbors='relative')
         if removal_idx == 'stop':
             return 'stop'
         for i, t in enumerate(temp_assign.values()):
@@ -160,7 +160,7 @@ def LNS(info, dir):
 
     for itr in range(100):
         temp_assign = copy.deepcopy(assign)
-        removal_idx = removal(task_idx, info['tasks'], info['graph'], N=2, time_log=time_log, neigh='relative')
+        removal_idx = removal(task_idx, info['tasks'], info['graph'], N=2, time_log=time_log, neighbors='relative')
         if removal_idx == 'stop':
             return 'stop'
         for i, t in enumerate(temp_assign.values()):
