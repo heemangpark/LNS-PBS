@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from heuristics.hungarian import hungarian
 from heuristics.regret import f_ijk, get_regret
 from heuristics.shaw import removal
-from utils.graph_utils import sch_to_nx
+from utils.graph_utils import convert_to_nx
 from utils.scenario_utils import load_scenarios
 from utils.solver_utils import to_solver, solver
 
@@ -85,7 +85,7 @@ def collect(exp_num):
     for tr in temp_routes:
         schedules += tr
     n_agents, n_tasks = len(info['agents']), len(info['tasks'])
-    sch_nx = sch_to_nx(schedules, info['graph'], n_agents, n_tasks)
+    sch_nx = convert_to_nx(schedules, info['graph'], n_agents, n_tasks)
     sch_space = dgl.from_networkx(sch_nx, node_attrs=['coord', 'type'], edge_attrs=['a_dist', 'dist', 'obs_proxy'])
     dgl.save_graphs(data_save_dir + 'sch_space_{}.pkl'.format(exp_num), sch_space)
 

@@ -1,6 +1,7 @@
 import copy
 import os
 import pickle
+import random
 import shutil
 import sys
 from multiprocessing import Process
@@ -13,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from heuristics.hungarian import hungarian
 from heuristics.regret import f_ijk, get_regret
 from heuristics.shaw import removal
-from utils.graph_utils import sch_to_nx
+from utils.graph_utils import convert_to_nx
 from nn.repair_agent import NeuroRepair
 from utils.scenario_utils import load_scenarios
 from utils.solver_utils import to_solver, solver
@@ -50,7 +51,7 @@ def NLNS(info, graph, dir):
                 for i, coords in enumerate(assign.values()):
                     temp_schedule = [list(c.values())[0][0] for c in coords]
                     coordination[i].extend(temp_schedule)
-                graph = sch_to_nx(assign_id, coordination, info['graph'])
+                graph = convert_to_nx(assign_id, coordination, info['graph'])
                 results.append(pre_cost)
             elif cost >= pre_cost:
                 results.append(pre_cost)
@@ -72,7 +73,7 @@ def rLNS(info, dir):
             info['graph'],
             N=2,
             time_log=time_log,
-            neighbors='random',
+            neighbors='random'
         )
         if removal_idx == 'stop':
             return 'stop'
@@ -125,8 +126,7 @@ def bLNS(info, dir):
             info['tasks'],
             info['graph'],
             N=9,
-            time_log=time_log,
-            neighbors='relative'
+            time_log=time_log
         )
         if removal_idx == 'stop':
             return 'stop'
@@ -179,8 +179,7 @@ def LNS(info, dir):
             info['tasks'],
             info['graph'],
             N=2,
-            time_log=time_log,
-            neighbors='relative'
+            time_log=time_log
         )
         if removal_idx == 'stop':
             return 'stop'
@@ -259,10 +258,11 @@ def run(dir):
 
 
 if __name__ == '__main__':
+    random.seed(42)
     eval = False
 
     if eval:
-        for total_exp in trange(10):
+        for total_exp in trange(3):
             dirs_list = []
             for exp_num in range(total_exp * 10, total_exp * 10 + 10):
                 solver_dir = os.path.join(Path(os.path.realpath(__file__)).parent, 'EECBS/eecbs')

@@ -5,8 +5,6 @@ import networkx as nx
 import numpy as np
 import torch
 
-from utils.astar_utils import graph_astar
-
 
 def grid_to_dgl(world, rand_coord=True, four_dir=True):
     world = deepcopy(world)
@@ -124,10 +122,11 @@ def createGraph(instance, rand_coord=False):
     return g
 
 
-def sch_to_nx(assign_id, coord_schedule, graph):
+def convert_to_nx(assign_id, coord_schedule, graph):
     coords = [item for sublist in coord_schedule for item in sublist]
-    sch_nx = nx.complete_graph(len(coords))
-    nx.set_node_attributes(sch_nx, dict(zip(sch_nx.nodes, coords)), 'coord')
+    norm_coords = [[c[0] / 64, c[1] / 64] for c in coords]
+    sch_nx = nx.complete_graph(len(norm_coords))
+    nx.set_node_attributes(sch_nx, dict(zip(sch_nx.nodes, norm_coords)), 'coord')
 
     AG_type, TASK_type = 1, 2
     types = []
@@ -142,13 +141,13 @@ def sch_to_nx(assign_id, coord_schedule, graph):
 
     nx.set_node_attributes(sch_nx, dict(zip(sch_nx.nodes, range(sch_nx.number_of_nodes()))), 'graph_id')
 
-    a_dist = [int(graph_astar(graph, coords[i], coords[j])[1]) for i, j in sch_nx.edges]
-    dist = [np.abs(coords[i][0] - coords[j][0]) + np.abs(coords[i][1] - coords[j][1]) for i, j in sch_nx.edges]
-    obs = [i - j for i, j in zip(a_dist, dist)]
+    # a_dist = [int(graph_astar(graph, coords[i], coords[j])[1]) for i, j in sch_nx.edges]
+    norm_dist = [np.abs(coords[i][0] - coords[j][0]) + np.abs(coords[i][1] - coords[j][1]) / 64 for i, j in sch_nx.edges]
+    # obs = [i - j for i, j in zip(a_dist, dist)]
 
-    nx.set_edge_attributes(sch_nx, dict(zip(sch_nx.edges, a_dist)), 'a_dist')
-    nx.set_edge_attributes(sch_nx, dict(zip(sch_nx.edges, dist)), 'dist')
-    nx.set_edge_attributes(sch_nx, dict(zip(sch_nx.edges, obs)), 'obs_proxy')
+    # nx.set_edge_attributes(sch_nx, dict(zip(sch_nx.edges, a_dist)), 'a_dist')
+    nx.set_edge_attributes(sch_nx, dict(zip(sch_nx.edges, norm_dist)), 'dist')
+    # nx.set_edge_attributes(sch_nx, dict(zip(sch_nx.edges, obs)), 'obs_proxy')
     nx.set_edge_attributes(sch_nx, dict(zip(sch_nx.edges, [0] * sch_nx.number_of_edges())), 'connected')
 
     start_node_idx = 0

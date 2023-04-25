@@ -6,7 +6,7 @@ import numpy as np
 
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from heuristics.regret import f_ijk, get_regret
-from utils.graph_utils import sch_to_nx
+from utils.graph_utils import convert_to_nx
 from heuristics.hungarian import hungarian
 from utils.solver_utils import to_solver, solver
 
@@ -49,7 +49,7 @@ class env_LNS:
         schedules = self.ag_loc.tolist()
         for r in routes:
             schedules += r
-        state = sch_to_nx(schedules, self.grid, len(self.ag_loc), len(self.task_loc))
+        state = convert_to_nx(schedules, self.grid, len(self.ag_loc), len(self.task_loc))
 
         return state
 
@@ -86,6 +86,6 @@ class env_LNS:
             for tr in routes:
                 schedules += tr
 
-            state = sch_to_nx(schedules, self.grid, len(self.ag_loc), len(self.task_loc))
+            state = convert_to_nx(schedules, self.grid, len(self.ag_loc), len(self.task_loc))
 
         return state, reward, done

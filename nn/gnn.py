@@ -32,7 +32,7 @@ class GNNLayer(nn.Module):
     def __init__(self, in_dim, out_dim):
         super(GNNLayer, self).__init__()
         self.node_embedding = nn.Sequential(nn.Linear(out_dim + in_dim, out_dim, bias=False), nn.LeakyReLU())
-        self.edge_embedding = nn.Sequential(nn.Linear(in_dim * 2 + 3, out_dim, bias=False), nn.LeakyReLU())
+        self.edge_embedding = nn.Sequential(nn.Linear(in_dim * 2 + 1, out_dim, bias=False), nn.LeakyReLU())
 
     def forward(self, g: dgl.DGLGraph, nf):
         g.ndata['nf'] = nf
@@ -45,10 +45,10 @@ class GNNLayer(nn.Module):
         return out_nf
 
     def message_func(self, edges):
-        init_feat = torch.concat([edges.data['a_dist'].view(-1, 1),
-                                  edges.data['dist'].view(-1, 1),
-                                  edges.data['obs_proxy'].view(-1, 1)], -1)
-
+        # init_feat = torch.concat([edges.data['a_dist'].view(-1, 1),
+        #                           edges.data['dist'].view(-1, 1),
+        #                           edges.data['obs_proxy'].view(-1, 1)], -1)
+        init_feat = edges.data['dist'].view(-1, 1)
         feature = torch.concat([init_feat, edges.src['nf'], edges.dst['nf']], -1)
 
         msg = self.edge_embedding(feature)

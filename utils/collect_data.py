@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from heuristics.hungarian import hungarian
 from heuristics.regret import f_ijk, get_regret
 from heuristics.shaw import removal
-from utils.graph_utils import sch_to_nx
+from utils.graph_utils import convert_to_nx
 from utils.scenario_utils import load_scenarios
 from utils.solver_utils import to_solver, solver, assignment_to_id
 
@@ -73,7 +73,7 @@ def LNS(info, exp_num, dirs=None):
                 temp_schedule = [list(c.values())[0][0] for c in coords]
                 coordination[i].extend(temp_schedule)
 
-            graph = sch_to_nx(assign_id, coordination, info['graph'])
+            graph = convert_to_nx(assign_id, coordination, info['graph'])
             graph_list.append(graph)
 
         else:
@@ -123,7 +123,7 @@ def collect(exp_num):
         temp_schedule = [list(c.values())[0][0] for c in coords]
         coordination[i].extend(temp_schedule)
 
-    info['init_graph'] = sch_to_nx(coordination, info['graph'])
+    info['init_graph'] = convert_to_nx(coordination, info['graph'])
 
     LNS(info, exp_num, dirs=dirs)
 
