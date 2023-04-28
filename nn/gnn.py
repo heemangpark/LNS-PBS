@@ -55,7 +55,7 @@ class GNNLayer(nn.Module):
         return {'msg': msg}
 
     def reduce_func(self, nodes):
-        msg = nodes.mailbox['msg'].sum(1)
+        msg = nodes.mailbox['msg'].min(1).values
         return {'red_msg': msg}
 
     def apply_node_func(self, nodes):

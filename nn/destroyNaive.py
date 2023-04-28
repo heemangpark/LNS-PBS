@@ -8,29 +8,27 @@ from nn.gnn import GNN
 class MLP(nn.Module):
     def __init__(self, input_size=64, hidden_size=32, output_size=1):
         super(MLP, self).__init__()
-        self.layers = nn.Sequential(
+
+        self.graph_readout = nn.Sequential(
             nn.Linear(input_size, hidden_size),
             nn.LeakyReLU(),
-            nn.Linear(hidden_size, hidden_size),
-            nn.LeakyReLU(),
-            nn.Linear(hidden_size, output_size)
+            nn.Linear(hidden_size, 1)
         )
-        self.pred = nn.Linear(55 + 3, 1)
 
         self.device = 'cuda:1' if torch.cuda.is_available() else 'cpu'
         self.empty_tensor = torch.Tensor().to(self.device)
         self.to(self.device)
 
     def forward(self, input):
-        x = self.layers(input).squeeze()
-        x = self.pred(x)
+        graph_feature = input.sum(-2)
+        output = self.graph_readout(graph_feature)
 
-        return x.squeeze()
+        return output.squeeze()
 
 
-class DestroyAgent(nn.Module):
+class DestroyNaive(nn.Module):
     def __init__(self, embedding_dim=64, gnn_layers=3):
-        super(DestroyAgent, self).__init__()
+        super(DestroyNaive, self).__init__()
         self.embedding_dim = embedding_dim
         self.layer = nn.Linear(2, embedding_dim)
         self.gnn = GNN(
@@ -42,14 +40,14 @@ class DestroyAgent(nn.Module):
         )
 
         self.mlp = MLP()
-        self.loss = nn.MSELoss()
+        self.loss = nn.L1Loss()
         self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-4)
 
         self.device = 'cuda:1' if torch.cuda.is_available() else 'cpu'
         self.empty_tensor = torch.Tensor().to(self.device)
         self.to(self.device)
 
-    def train(self, graphs: dgl.DGLHeteroGraph, destroys: list, graph_list: list, batch_config: list):
+    def learn(self, graphs: dgl.DGLHeteroGraph, destroys: list, graph_list: list, batch_config: list):
         data_size, batch_size, batch_num = batch_config
 
         g_node_feat = graphs.ndata['coord']
@@ -79,8 +77,8 @@ class DestroyAgent(nn.Module):
                 embed_per_map = torch.cat([embed_per_map, x.unsqueeze(0)])
             final = torch.cat([final, embed_per_map.unsqueeze(0)])
 
-        x = self.mlp(final)  # batch_size x 100
-        y = costs  # batch_size x 100
+        x = self.mlp(final)
+        y = costs / 64  # TODO: hardCoded
 
         loss = self.loss(x, y)
         self.optimizer.zero_grad()
@@ -88,3 +86,26 @@ class DestroyAgent(nn.Module):
         self.optimizer.step()
 
         return loss.item()
+
+    def act(self, graph: dgl.DGLHeteroGraph, destroys: list):
+        g_node_feat = graph.ndata['coord']
+        g_node_feat_embed = self.layer(g_node_feat)
+        g_embedding = self.gnn(graph, g_node_feat_embed)
+
+        d_coords = self.empty_tensor
+        for d in destroys:
+            d_coord = self.empty_tensor
+            for single_d in d:
+                destroyed_idx = graph.nodes()[graph.ndata['idx'] == single_d].item()
+                d_coord = torch.cat([d_coord, graph.nodes[destroyed_idx].data['coord']])
+            d_coords = torch.cat([d_coords, d_coord.unsqueeze(0)])
+        d_embedding = self.layer(d_coords)
+
+        final = self.empty_tensor
+        for d_embed in d_embedding:
+            f = torch.cat([g_embedding, d_embed])
+            final = torch.cat([final, f.unsqueeze(0)])
+
+        cost = self.mlp(final)
+
+        return cost.cpu().detach().numpy()

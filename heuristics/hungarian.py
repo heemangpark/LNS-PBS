@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
-from utils.astar_utils import graph_astar
+from utils.astar import graph_astar
 
 
 def cost_matrix(g, a, t):

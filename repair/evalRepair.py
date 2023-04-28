@@ -14,13 +14,13 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from heuristics.hungarian import hungarian
 from heuristics.regret import f_ijk, get_regret
 from heuristics.shaw import removal
-from utils.graph_utils import convert_to_nx
-from nn.repair_agent import NeuroRepair
-from utils.scenario_utils import load_scenarios
-from utils.solver_utils import to_solver, solver
-from utils.solver_utils import assignment_to_id
-from utils.solver_utils import id_to_assignment
-from utils.plot_utils import comparing_plot
+from utils.graph import convert_to_nx
+from nn.repair import NeuroRepair
+from utils.scenario import load_scenarios
+from utils.solver import to_solver, solver
+from utils.solver import assignment_to_id
+from utils.solver import id_to_assignment
+from utils.plot import comparing_plot
 
 model = NeuroRepair(train=False)
 model.load_state_dict(torch.load('repair.pt'))
@@ -265,7 +265,7 @@ if __name__ == '__main__':
         for total_exp in trange(3):
             dirs_list = []
             for exp_num in range(total_exp * 10, total_exp * 10 + 10):
-                solver_dir = os.path.join(Path(os.path.realpath(__file__)).parent, 'EECBS/eecbs')
+                solver_dir = os.path.join(Path(os.path.realpath(__file__)).parent, '../EECBS/eecbs')
                 save_dir = os.path.join(Path(os.path.realpath(__file__)).parent, 'EECBS/rLNS_{}/'.format(exp_num)), \
                            os.path.join(Path(os.path.realpath(__file__)).parent, 'EECBS/bLNS_{}/'.format(exp_num)), \
                            os.path.join(Path(os.path.realpath(__file__)).parent, 'EECBS/LNS_{}/'.format(exp_num)), \

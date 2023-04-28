@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
-from utils.graph_utils import validGraph
+from utils.graph import validGraph
 
 curr_path = os.path.realpath(__file__)
 scenario_dir = os.path.join(Path(curr_path).parent.parent, 'scenarios')

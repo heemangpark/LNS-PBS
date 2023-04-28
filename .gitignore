@@ -5,6 +5,7 @@ __pycache__/
 
 # datasets
 dataset/
+destroy/
 platform/
 scenarios/
 

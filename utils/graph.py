@@ -122,7 +122,7 @@ def createGraph(instance, rand_coord=False):
     return g
 
 
-def convert_to_nx(assign_id, coord_schedule, graph):
+def convert_to_nx(assign_id, coord_schedule, graph):  # TODO: hardCoded
     coords = [item for sublist in coord_schedule for item in sublist]
     norm_coords = [[c[0] / 64, c[1] / 64] for c in coords]
     sch_nx = nx.complete_graph(len(norm_coords))

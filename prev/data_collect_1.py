@@ -11,9 +11,9 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from heuristics.hungarian import hungarian
 from heuristics.regret import f_ijk, get_regret
 from heuristics.shaw import removal
-from utils.graph_utils import convert_to_nx
-from utils.scenario_utils import load_scenarios
-from utils.solver_utils import to_solver, solver
+from utils.graph import convert_to_nx
+from utils.scenario import load_scenarios
+from utils.solver import to_solver, solver
 
 
 def LNS(info, exp_num, itrs, N, neigh='relative', dirs=None):
