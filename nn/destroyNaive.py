@@ -53,7 +53,7 @@ class DestroyNaive(nn.Module):
         g_node_feat = graphs.ndata['coord']
         g_node_feat_embed = self.layer(g_node_feat)
         g_embedding = self.gnn(graphs, g_node_feat_embed)
-        g_embedding = g_embedding.reshape(batch_size, g_embedding.shape[0] // batch_size, 64)  # TODO: hard coded
+        g_embedding = g_embedding.reshape(batch_size, g_embedding.shape[0] // batch_size, self.embedding_dim)
 
         d_coord_tensor, costs = self.empty_tensor, self.empty_tensor
         for d, coord_graph in zip(destroys, graph_list):
@@ -61,7 +61,6 @@ class DestroyNaive(nn.Module):
             for d_ids in d.keys():
                 d_coord = self.empty_tensor
                 for d_id in d_ids:
-                    # bringing coordination of destroyed nodes
                     destroyed_idx = coord_graph.nodes()[coord_graph.ndata['idx'] == d_id].item()
                     d_coord = torch.cat([d_coord, coord_graph.nodes[destroyed_idx].data['coord']])
                 d_coords = torch.cat([d_coords, d_coord.unsqueeze(0)])

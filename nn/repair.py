@@ -5,7 +5,7 @@ import networkx as nx
 import torch
 from torch import nn as nn
 
-from nn.gnn import GNN, GNNLayer_edge
+from nn.gnn import GNN, GNNLayerEdgewise
 
 
 def tempDestroy(assign, graph, removal):
@@ -44,7 +44,7 @@ class Repair(nn.Module):
             n_layers=2,
             residual=True,
         )
-        self.edge_layer = GNNLayer_edge(embedding_dim * 2, embedding_dim)
+        self.edge_layer = GNNLayerEdgewise(embedding_dim * 2, embedding_dim)
         self.score_layer = nn.Linear(embedding_dim * 2, 1)
 
     def forward(self, assign, graph, removal):

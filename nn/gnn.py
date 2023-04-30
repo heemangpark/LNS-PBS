@@ -3,6 +3,10 @@ import torch
 import torch.nn as nn
 
 
+def _connected_edges(edges):
+    return (edges.data['connected'] == 1) * (edges.src['idx'] < edges.dst['idx'])
+
+
 class GNN(nn.Module):
     def __init__(self, in_dim, out_dim, embedding_dim, n_layers, residual=False):
         super(GNN, self).__init__()
@@ -64,26 +68,48 @@ class GNNLayer(nn.Module):
         return {'out_nf': out_feat}
 
 
-class GNNLayer_edge(nn.Module):
+class GNNEdgewise(nn.Module):
+    def __init__(self, in_dim, out_dim, embedding_dim, n_layers, residual=False):
+        super(GNNEdgewise, self).__init__()
+        self.residual = residual
+        _ins = [in_dim] + [embedding_dim] * (n_layers - 1)
+        _outs = [embedding_dim] * (n_layers - 1) + [out_dim]
+
+        layers = []
+        for _i, _o in zip(_ins, _outs):
+            layers.append(GNNLayer(_i, _o))
+
+        self.layers = nn.ModuleList(layers)
+        self.layer = nn.Linear(embedding_dim, 1)
+
+    def forward(self, g, nf):
+        nf_prev = nf
+        for layer in self.layers:
+            nf_aft = layer(g, nf_prev)
+            if self.residual:
+                nf_aft += nf_prev
+            nf_prev = nf_aft
+
+        return nf_aft
+
+
+class GNNLayerEdgewise(nn.Module):
     def __init__(self, in_dim, out_dim):
-        super(GNNLayer_edge, self).__init__()
-        self.edge_embedding = nn.Sequential(nn.Linear(in_dim, out_dim, bias=False),
-                                            nn.LeakyReLU())
+        super(GNNLayerEdgewise, self).__init__()
+        self.edge_embedding = nn.Sequential(nn.Linear(in_dim, out_dim, bias=False), nn.LeakyReLU())
 
     def forward(self, g: dgl.DGLGraph, nf):
         g.ndata['nf'] = nf
-        c_edges = g.filter_edges(_connected_edges)
-        g.apply_edges(self.message_func, edges=c_edges)
+        # c_edges = g.filter_edges(_connected_edges)
+        # g.apply_edges(self.message_func, edges=c_edges)
+        g.apply_edges(self.message_func)
 
         msg = g.edata.pop('msg')
         g.ndata.pop('nf')
-        return msg[c_edges]
+        # return msg[c_edges]
+        return msg
 
     def message_func(self, edges):
         feature = torch.concat([edges.src['nf'], edges.dst['nf']], -1)
         msg = self.edge_embedding(feature)
         return {'msg': msg}
-
-
-def _connected_edges(edges):
-    return (edges.data['connected'] == 1) * (edges.src['id'] < edges.dst['id'])
