@@ -74,8 +74,8 @@ class DestroyEdgewise(nn.Module):
     def __init__(self, embedding_dim=64, gnn_layers=3):
         super(DestroyEdgewise, self).__init__()
         self.embedding_dim = embedding_dim
-        self.node_layer = nn.Linear(2, embedding_dim)
-        self.edge_layer = GNNLayerEdgewise(embedding_dim * 2, embedding_dim)
+        self.nodeLayer = nn.Linear(2, embedding_dim)
+        self.edgeLayer = GNNLayerEdgewise(embedding_dim * 2, embedding_dim)
 
         self.gnn = GNNEdgewise(
             in_dim=embedding_dim,
@@ -93,16 +93,17 @@ class DestroyEdgewise(nn.Module):
 
         self.lossList = []
 
-    def learn(self, graphs: dgl.DGLHeteroGraph, destroys: dict):
+    def learn(self, graphs: dgl.DGLHeteroGraph, destroys: dict, batch='NB'):
         """
         @param graphs: original graph (without destroy yet)
         @param destroys: destroyed node sets and each cost decrement
                         (cost decrement -> route length before destroy - route length after destroy)
+        @param batch: model update with batched loss
         @return: L1loss value of model
         """
-        nf = self.node_layer(graphs.ndata['coord'])
+        nf = self.nodeLayer(graphs.ndata['coord'])
         next_nf = self.gnn(graphs, nf)
-        ef = self.edge_layer(graphs, next_nf)
+        ef = self.edgeLayer(graphs, next_nf)
 
         destroyed_graphs = [destroyGraph(graphs, d) for d in destroys.keys()]
 
@@ -119,14 +120,22 @@ class DestroyEdgewise(nn.Module):
         " cost: original value - destroyed value (+ better, - worse)"
         cost = torch.Tensor(list(map(lambda x: x / 64, list(destroys.values())))).to(DEVICE)
 
-        loss = torch.sum(torch.abs(pred - cost))
-        self.lossList.append(loss)
-        if len(self.lossList) == 10:
-            loss = torch.cat(self.lossList).mean()
+        if batch == 'B':
+            loss = torch.sum(torch.abs(pred - cost))
+            self.lossList.append(loss)
+            if len(self.lossList) == 10:
+                loss = torch.cat(self.lossList).mean()
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
+                self.lossList = []
+        elif batch == 'NB':
+            loss = torch.sum(torch.abs(pred - cost))
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
-            self.lossList = []
+        else:
+            raise NotImplementedError
 
         return loss.item()
 
@@ -137,9 +146,9 @@ class DestroyEdgewise(nn.Module):
         @param evalMode: greedy -> argmax model prediction, sample -> sample from softmax(prediction)
         @return: the best node set to destroy
         """
-        nf = self.node_layer(graph.ndata['coord'])
+        nf = self.nodeLayer(graph.ndata['coord'])
         next_nf = self.gnn(graph, nf)
-        ef = self.edge_layer(graph, next_nf)
+        ef = self.edgeLayer(graph, next_nf)
 
         destroyed_graphs = [destroyGraph(graph, d) for d in destroyCand]
 
