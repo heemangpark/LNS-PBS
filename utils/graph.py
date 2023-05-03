@@ -122,9 +122,9 @@ def createGraph(instance, rand_coord=False):
     return g
 
 
-def convert_to_nx(assign_id, coord_schedule, graph):  # TODO: hardCoded
+def convert_to_nx(assign_id, coord_schedule, size):
     coords = [item for sublist in coord_schedule for item in sublist]
-    norm_coords = [[c[0] / 64, c[1] / 64] for c in coords]
+    norm_coords = [[c[0] / size, c[1] / size] for c in coords]
     sch_nx = nx.complete_graph(len(norm_coords))
     nx.set_node_attributes(sch_nx, dict(zip(sch_nx.nodes, norm_coords)), 'coord')
 
@@ -142,7 +142,8 @@ def convert_to_nx(assign_id, coord_schedule, graph):  # TODO: hardCoded
     nx.set_node_attributes(sch_nx, dict(zip(sch_nx.nodes, range(sch_nx.number_of_nodes()))), 'graph_id')
 
     # a_dist = [int(graph_astar(graph, coords[i], coords[j])[1]) for i, j in sch_nx.edges]
-    norm_dist = [np.abs(coords[i][0] - coords[j][0]) + np.abs(coords[i][1] - coords[j][1]) / 64 for i, j in sch_nx.edges]
+    norm_dist = [np.abs(coords[i][0] - coords[j][0]) + np.abs(coords[i][1] - coords[j][1]) / size
+                 for i, j in sch_nx.edges]
     # obs = [i - j for i, j in zip(a_dist, dist)]
 
     # nx.set_edge_attributes(sch_nx, dict(zip(sch_nx.edges, a_dist)), 'a_dist')

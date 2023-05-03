@@ -4,12 +4,18 @@ from scipy.optimize import linear_sum_assignment
 from utils.astar import graph_astar
 
 
+def manhattan(coord_1, coord_2):
+    x = abs(list(coord_1)[0] - list(coord_2)[0])
+    y = abs(list(coord_1)[1] - list(coord_2)[1])
+    return x + y
+
+
 def cost_matrix(g, a, t):
     m = np.zeros((len(a), len(t)))
     for i in range(len(a)):
         for j in range(len(t)):
-            m[i][j] = graph_astar(g, a[i], t[j][0])[1]
-
+            # m[i][j] = graph_astar(g, a[i], t[j][0])[1]
+            m[i][j] = manhattan(a[i], t[j][0])
     return m
 
 

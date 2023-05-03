@@ -6,7 +6,7 @@ from nn.gnn import GNN
 
 
 class MLP(nn.Module):
-    def __init__(self, input_size=64, hidden_size=32, output_size=1):
+    def __init__(self, input_size=64, hidden_size=32):
         super(MLP, self).__init__()
 
         self.graph_readout = nn.Sequential(

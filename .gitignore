@@ -2,15 +2,19 @@ __pycache__/
 .git/
 .idea/
 .ipynb_checkpoints/
+wandb/
 
 # datasets
 dataset/
 destroy/
-platform/
 scenarios/
 
 # MAPF solvers
 EECBS/
+
+# temp dirs
+platform/
+prev/
 
 *.ipynb
 *.png
@@ -18,3 +22,5 @@ EECBS/
 *.th
 *.csv
 *.xlsx
+*.pkl
+*.pt
