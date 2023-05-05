@@ -1,4 +1,5 @@
 from copy import deepcopy
+from functools import partial
 
 import numpy as np
 
@@ -6,6 +7,11 @@ from utils.astar import graph_astar
 
 
 def f_ijk(current_tasks, agent_pos, removal_idx, total_tasks, graph, metric='man'):
+    if metric == 'man':
+        method = manhattan
+    else:
+        method = partial(graph_astar, ret_cost_only=True)
+
     n_ag = len(agent_pos)
 
     before_cost = []
