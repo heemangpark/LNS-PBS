@@ -1,7 +1,5 @@
 import random
-
 import numpy as np
-
 from utils.astar import graph_astar
 
 

@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
-from heuristics.hungarian import hungarian, hungarian_prev
+from heuristics.hungarian import hungarian
 from heuristics.regret import f_ijk, get_regret
 from heuristics.shaw import removal
 from utils.scenario import load_scenarios
@@ -18,14 +18,14 @@ from utils.graph import convert_to_nx
 def _collectEval(info, solver_dir, save_dir, exp_name):
     random.seed(42)
 
-    task_idx, assign = info['lns']
+    assign_idx, assign_pos = info['lns']
     pre_cost = info['init_cost']
     results = [pre_cost]
     time_log = None
     for itr in range(100):
-        temp_assign = copy.deepcopy(assign)
+        temp_assign_idx = copy.deepcopy(assign_idx)
         removal_idx = removal(
-            task_idx,
+            assign_idx,
             info['tasks'],
             info['graph'],
             N=2,
@@ -33,13 +33,18 @@ def _collectEval(info, solver_dir, save_dir, exp_name):
         )
         if removal_idx == 'stop':
             return 'stop'
-        for i, t in enumerate(temp_assign.values()):
-            for r in removal_idx:
-                if {r: info['tasks'][r]} in t:
-                    temp_assign[i].remove({r: info['tasks'][r]})
+
+        # remove 'removal_idx'
+        removed = [False for _ in removal_idx]
+        for schedule in temp_assign_idx:
+            for i, r in enumerate(removal_idx):
+                if removed[i]: continue
+                if r in schedule:
+                    schedule.remove(r)
+                    removed[i] = True
 
         while len(removal_idx) != 0:
-            f_val = f_ijk(temp_assign, info['agents'], removal_idx, info['tasks'], info['graph'])
+            f_val = f_ijk(temp_assign_idx, info['agents'], removal_idx, info['tasks'], info['graph'])
             regret = get_regret(f_val)
             regret = dict(sorted(regret.items(), key=lambda x: x[1][0], reverse=True))
             re_ins = list(regret.keys())[0]
@@ -83,7 +88,7 @@ def run(run_info, N, M):
     info = {'grid': scenario[0], 'graph': scenario[1], 'agents': scenario[2], 'tasks': [t[0] for t in scenario[3]]}
 
     assign_id, assign_pos = hungarian(info['graph'], info['agents'], info['tasks'])
-    assign_id, assign = hungarian_prev(info['graph'], info['agents'], scenario[3])
+    # assign_id, assign = hungarian_prev(info['graph'], info['agents'], scenario[3])
     info['lns'] = assign_id, assign_pos
 
     coordination = [[a.tolist()] + t for a, t in zip(info['agents'], assign_pos)]

@@ -13,29 +13,24 @@ def manhattan(coord_1, coord_2, *args):
 
 
 def f_ijk(current_tasks, agent_pos, removal_idx, total_tasks, graph, metric='man'):
-    method = manhattan if metric == 'man' else partial(graph_astar, ret_cost_only=True)
-
+    assert metric == 'man', "else than man not implemented yet. " \
+                            "Check commit 0f816c10240a59fa8f2edef3f925206aead4c7bd to revert "
     n_ag = len(agent_pos)
     before_cost = []
     before_edge_cost = [[] for _ in range(n_ag)]
 
-    for ag_idx in current_tasks.keys():
-        b_path = list()
-        for _a in current_tasks[ag_idx]:
-            for _b in _a.values():
-                b_path += _b
+    for ag_idx in range(n_ag):
+        schedule = current_tasks[ag_idx]
+        if len(schedule) == 0:
+            before_edge_cost[ag_idx].append(0)
+            before_cost.append(0)
+            continue
+        task_locs = np.array(total_tasks)[schedule]
+        all_locs = np.concatenate([agent_pos[ag_idx].reshape(1, -1), task_locs])
+        all_edge_costs = np.abs(all_locs[:-1] - all_locs[1:]).sum(-1)
 
-        " Initial segment "
-        edge_cost = 0 if len(b_path) == 0 else method(agent_pos[ag_idx], b_path[0], graph)
-        before_edge_cost[ag_idx].append(edge_cost)
-
-        " Edge cost "
-        for _s, _g in zip(b_path[:-1], b_path[1:]):
-            edge_cost = method(_s, _g, graph)
-            before_edge_cost[ag_idx].append(edge_cost)
-
-        path_cost = sum(before_edge_cost[ag_idx])
-        before_cost.append(path_cost)
+        before_edge_cost[ag_idx].append(all_edge_costs)
+        before_cost.append(all_edge_costs.sum())
 
     f = dict(zip(removal_idx, [list() for _ in range(len(removal_idx))]))
     for i in removal_idx:
