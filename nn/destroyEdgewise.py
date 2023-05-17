@@ -1,5 +1,4 @@
 import copy
-import time
 
 import dgl
 import torch
@@ -98,11 +97,15 @@ class MLP(nn.Module):
             nn.Linear(hidden_size, 1)
         )
 
+        self.softmax = nn.Softmax(dim=-1)
+
     def forward(self, input):
         x = self.linear(input)
-        x = torch.sum(x.squeeze(), -1)
+        x = x.squeeze()
+        x = torch.sum(x, -1)
+        x = self.softmax(x)
 
-        return x.squeeze()
+        return x
 
 
 class DestroyEdgewise(nn.Module):
@@ -122,6 +125,7 @@ class DestroyEdgewise(nn.Module):
 
         self.mlp = MLP()
         self.optimizer = Lion(self.parameters(), lr=1e-4)
+        self.loss = nn.KLDivLoss(reduction='batchmean')
         self.to(device)
 
     def learn(self, graphs: dgl.DGLHeteroGraph, destroys: list, batchNum: int, device: str):
@@ -131,7 +135,7 @@ class DestroyEdgewise(nn.Module):
                         (cost decrement -> route length before destroy - route length after destroy)
         @param batchNum: number of batch data
         @param device: model device
-        @return: L1loss value of model
+        @return: loss
         """
         destroyNum = len(destroys[0])
 
@@ -143,11 +147,9 @@ class DestroyEdgewise(nn.Module):
         unbatchGraphs = dgl.unbatch(graphs)
         gs_to_destroy = []
         destroy_lst = []
-        t = time.time()
         for g, destroy in zip(unbatchGraphs, destroys):
             gs_to_destroy.extend([g] * len(destroy))
             destroy_lst.extend(list(destroys[0].keys()))
-
         destroyedGraph = destroyBatchGraph(gs_to_destroy, destroy_lst, device)
 
         # TODO: time
@@ -164,12 +166,17 @@ class DestroyEdgewise(nn.Module):
         mask = graphs.edge_ids(srcIdx, dstIdx)
         input_ef = ef[mask].reshape(batchNum, len(destroys[0]), -1, ef.shape[-1])
 
-        pred = self.mlp(input_ef)
+        pred = self.mlp(input_ef) + 1e-10
 
         " cost: original value - destroyed value (+ better, - worse)"
-        cost = torch.Tensor([list(map(lambda x: x / 64, list(d.values()))) for d in destroys]).to(device)
+        # cost = torch.Tensor([list(map(lambda x: x / 64, list(d.values()))) for d in destroys]).to(device)
+        cost = torch.Tensor([list(d.values()) for d in destroys]).to(device)
+        baseline = torch.tile(torch.mean(cost, dim=-1).view(-1, 1), dims=(1, 10)).detach()
+        # softmax = nn.Softmax(dim=-1)
+        # cost = softmax(cost)
 
-        loss = torch.mean(torch.abs(pred - cost))
+        # loss = self.loss(pred.log(), cost)
+        loss = torch.mean(-(cost - baseline) * torch.log(pred))  # REINFORCE
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -184,27 +191,32 @@ class DestroyEdgewise(nn.Module):
         @param device: model device
         @return: the best node set to destroy
         """
+        import time
+
         nf = self.nodeLayer(graph.ndata['coord'])
         next_nf = self.gnn(graph, nf)
         ef = self.edgeLayer(graph, next_nf)
 
-        destroyed_graphs = [destroyGraph(graph, d, device) for d in destroyCand]
+        ' Before modification '
+        destroyed_graphs = [destroyGraph(graph, d, device) for d in destroyCand]  # TODO: destroyBatch ?
+
+        ' After modification '
+        ###############################################################
+
+        ###############################################################
 
         DG = dgl.batch(destroyed_graphs)
         SRC = DG.ndata['graph_id'][DG.edges()[0][DG.edata['connected'] == 1]]
         DST = DG.ndata['graph_id'][DG.edges()[1][DG.edata['connected'] == 1]]
         mask = graph.edge_ids(SRC, DST)
         input_ef = ef[mask]
-        input_ef = input_ef.reshape(len(destroyCand), -1, input_ef.shape[-1])
-
+        input_ef = input_ef.reshape(len(destroyCand), -1, input_ef.shape[-1])  # Batch X 94(=100-6) X emb
         pred = self.mlp(input_ef)
 
         if evalMode == 'greedy':
-            return destroyCand[torch.argmax(pred).item()]
+            act = torch.argmax(pred).item()
         else:
-            softmax = nn.Softmax(0)
-            probs = softmax(pred)
-            m = C(probs=probs)
-            sample = m.sample()
+            m = C(probs=pred)
+            act = m.sample()
 
-            return destroyCand[sample.item()]
+        return destroyCand[act]
