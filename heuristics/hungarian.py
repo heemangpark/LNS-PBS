@@ -71,7 +71,7 @@ def hungarian(graph, ag_pos_initial, task_pos):
     ag, assignment = linear_sum_assignment(cm_initial)
     for a, t in zip(ag, assignment):
         ret_assignments[a].append(t)
-        ret_pos[a].append(task_pos[t])
+        ret_pos[a].append(task_pos[t].tolist())
     tasks_idx = np.arange((len(task_pos)))
     unassigned_idx = np.array(list(set(tasks_idx) - set(assignment)))
 
@@ -89,6 +89,6 @@ def hungarian(graph, ag_pos_initial, task_pos):
         # append to ret dict
         for a, t in zip(ag, assignment):
             ret_assignments[a].append(t)
-            ret_pos[a].append(task_pos[t])
+            ret_pos[a].append(task_pos[t].tolist())
 
     return ret_assignments, ret_pos

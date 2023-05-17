@@ -84,17 +84,11 @@ def run(run_info, N, M):
 
     assign_id, assign_pos = hungarian(info['graph'], info['agents'], info['tasks'])
     assign_id, assign = hungarian_prev(info['graph'], info['agents'], scenario[3])
-
     info['lns'] = assign_id, assign_pos
-    routes = to_solver(info['tasks'], assign)
 
-    coordination = [[a] for a in info['agents'].tolist()]
-    for i, coords in enumerate(assign.values()):
-        temp_schedule = [list(c.values())[0][0] for c in coords]
-        coordination[i].extend(temp_schedule)
+    coordination = [[a.tolist()] + t for a, t in zip(info['agents'], assign_pos)]
     initGraph = convert_to_nx(assign_id, coordination, info['grid'].shape[0])
-
-    info['init_cost'], _ = solver(info['grid'], info['agents'], routes, solver_dir=solver_dir, save_dir=init_save,
+    info['init_cost'], _ = solver(info['grid'], info['agents'], assign_pos, solver_dir=solver_dir, save_dir=init_save,
                                   exp_name='init')
     if info['init_cost'] == 'error':
         return 'abandon_seed'
