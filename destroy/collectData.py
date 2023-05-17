@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
-from heuristics.hungarian import hungarian
+from heuristics.hungarian import hungarian, hungarian_prev
 from heuristics.regret import f_ijk, get_regret
 from heuristics.shaw import removal
 from utils.scenario import load_scenarios
@@ -71,7 +71,7 @@ def _collectEval(info, solver_dir, save_dir, exp_name):
     return (results[0] - results[-1]) / results[0] * 100
 
 
-def run(run_info, N, M, process_idx):
+def run(run_info, N, M):
     random.seed(42)
 
     exp_num = run_info['exp_num']
@@ -80,8 +80,7 @@ def run(run_info, N, M, process_idx):
     init_save = run_info['init_save_dir']
 
     scenario = load_scenarios('323220_{}_{}_eval/scenario_{}.pkl'.format(N, M, exp_num))
-    info = {'grid': scenario[0], 'graph': scenario[1], 'agents': scenario[2], 'tasks': scenario[3]}
-
+    info = {'grid': scenario[0], 'graph': scenario[1], 'agents': scenario[2], 'tasks': [t[0] for t in scenario[3]]}
     assign_id, assign = hungarian(info['graph'], info['agents'], info['tasks'])
     info['lns'] = assign_id, assign
     routes = to_solver(info['tasks'], assign)
@@ -127,7 +126,7 @@ if __name__ == "__main__":
     if not os.path.exists('evalData/{}{}/'.format(N, M)):
         os.makedirs('evalData/{}{}/'.format(N, M))
 
-    for i in range(n_data):
+    for i in trange(n_data):
         run_infos = []
         for p, exp_num in enumerate(range(i * n_process, (i + 1) * n_process)):
             run_info = dict()
@@ -137,15 +136,17 @@ if __name__ == "__main__":
             run_info['init_save_dir'] = temp_init_dir + str(p) + '/'
 
             run_infos.append(run_info)
+            run(run_info, N, M)
 
-        run_list = [Process(target=run, args=(_info, N, M, i)) for i, _info in enumerate(run_infos)]
+        # run_list = [Process(target=run, args=(_info, N, M)) for _info in run_infos]
 
-        # make directory
+        # start process
         for r in run_list:
             r.start()
         while sum([not r.is_alive() for r in run_list]) != n_process:
             pass
 
+    # remove temp directories
     for p in range(n_process):
         if os.path.exists(temp_LNS_dir + str(p) + '/'):
             shutil.rmtree(temp_LNS_dir + str(p) + '/')
