@@ -227,7 +227,7 @@ def multiEval(evalMode='greedy', candSize=10, device='cuda:3', returnDict=dict, 
 
     " Load model "
     model = DestroyEdgewise(device=device)
-    model.load_state_dict(torch.load('models/0510_192046/destroyEdgewise_topK_100.pt'))
+    # model.load_state_dict(torch.load('models/0510_192046/destroyEdgewise_topK_100.pt'))
     model.eval()
 
     " EECBS solver directory setup "
