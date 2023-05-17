@@ -122,7 +122,7 @@ def createGraph(instance, rand_coord=False):
     return g
 
 
-def convert_to_nx(assign_id, coord_schedule, size):
+def convert_to_nx(assign_idx, coord_schedule, size):
     coords = [item for sublist in coord_schedule for item in sublist]
     norm_coords = [[c[0] / size, c[1] / size] for c in coords]
     sch_nx = nx.complete_graph(len(norm_coords))
@@ -135,7 +135,7 @@ def convert_to_nx(assign_id, coord_schedule, size):
     nx.set_node_attributes(sch_nx, dict(zip(sch_nx.nodes, types)), 'type')
 
     graph_assign_id = []
-    for idx in assign_id.values():
+    for idx in assign_idx:
         graph_assign_id.extend([-1] + idx)
     nx.set_node_attributes(sch_nx, dict(zip(sch_nx.nodes, graph_assign_id)), 'idx')
 
