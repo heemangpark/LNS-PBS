@@ -6,7 +6,6 @@ wandb/
 
 # datasets
 dataset/
-destroy/
 scenarios/
 
 # MAPF solvers
