@@ -81,8 +81,11 @@ def run(run_info, N, M):
 
     scenario = load_scenarios('323220_{}_{}_eval/scenario_{}.pkl'.format(N, M, exp_num))
     info = {'grid': scenario[0], 'graph': scenario[1], 'agents': scenario[2], 'tasks': [t[0] for t in scenario[3]]}
-    assign_id, assign = hungarian(info['graph'], info['agents'], info['tasks'])
-    info['lns'] = assign_id, assign
+
+    assign_id, assign_pos = hungarian(info['graph'], info['agents'], info['tasks'])
+    assign_id, assign = hungarian_prev(info['graph'], info['agents'], scenario[3])
+
+    info['lns'] = assign_id, assign_pos
     routes = to_solver(info['tasks'], assign)
 
     coordination = [[a] for a in info['agents'].tolist()]

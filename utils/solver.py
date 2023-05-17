@@ -61,7 +61,7 @@ def read_trajectory(path_file_dir):
 
 
 def to_solver(task_in_seq, assignment):
-    s_in_tasks = [[] for _ in range(len(assignment))]
+    s_in_tasks = [[] for _ in assignment]
     for a, t in assignment.items():
         if len(t) == 0:
             pass
