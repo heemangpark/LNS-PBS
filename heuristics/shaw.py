@@ -1,38 +1,41 @@
 import random
 
+import numpy as np
+
 from utils.astar import graph_astar
 
 
-def removal(tasks_idx, task_pos, graph, N=2, time_log=None, neighbors='related', metric='man'):
-    t_idx = list()
-    for v in tasks_idx.values():
-        t_idx.extend(v)
+def removal(tasks_idx, task_pos, graph, N=2, time_log=None, metric='man'):
+    if time_log == 'stop':
+        return 'stop'
+
+    t_idx = sum(tasks_idx, [])
     chosen = random.choice(t_idx)
-    t_idx.remove(chosen)
 
-    rs = dict()
-    for t in t_idx:
-        rela_ = relatedness(graph, task_pos[chosen], task_pos[t], time_log=time_log, metric=metric)
-        if rela_ == 'stop':
-            return 'stop'
-        else:
-            rs[t] = rela_
-    sorted_r = dict(sorted(rs.items(), key=lambda x: x[1], reverse=True))
-    removal_idx = [chosen] + [list(sorted_r.keys())[s] for s in range(N)]
-
-    if neighbors == 'related':
-        return removal_idx
-    else:
-        return [chosen] + list(random.sample(list(sorted_r.keys()), k=2))
-
-
-def relatedness(graph, ti, tj, w1=9, w2=3, time_log=None, metric='man'):
     if metric == 'man':
-        d_si_sj = manhattan(ti[0], tj[0])
-        # d_gi_gj = manhattan(ti[-1], tj[-1])
+        chosen_pos = task_pos[chosen]
+        curr_task_pos = np.array(task_pos)[t_idx]
+        rel_d = np.abs(curr_task_pos - np.array(chosen_pos)).sum(-1)
+    else:
+        raise NotImplementedError("only manhattan distance option is implemented")
+
+    if time_log is None:
+        rel_t = 0
+    else:
+        raise NotImplementedError
+
+    rel = rel_t + rel_d
+    mink_indices = sorted(range(len(rel)), key=lambda i: rel[i])[:N + 1]  # the first index is as same as chosen
+    removal_idx = np.array(t_idx)[mink_indices].tolist()
+
+    return removal_idx
+
+
+def relatedness(graph, ti, tj, time_log=None, metric='man'):
+    if metric == 'man':
+        d_si_sj = manhattan(ti, tj)
     else:
         d_si_sj = graph_astar(graph, ti[0], tj[0])[1]
-        # d_gi_gj = graph_astar(graph, ti[-1], tj[-1])[1]
 
     if time_log is None:
         timestep_i = 0
@@ -43,7 +46,7 @@ def relatedness(graph, ti, tj, w1=9, w2=3, time_log=None, metric='man'):
         timestep_i = time_log[tuple(ti[0])]
         timestep_j = time_log[tuple(tj[0])]
 
-    return w1 * d_si_sj + w2 * abs(timestep_i - timestep_j)
+    return d_si_sj + abs(timestep_i - timestep_j)
 
 
 def manhattan(coord_1, coord_2):
