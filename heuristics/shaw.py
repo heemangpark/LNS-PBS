@@ -9,10 +9,10 @@ def removal(tasks_idx, task_pos, graph, N=2, time_log=None, metric='man'):
 
     t_idx = sum(tasks_idx, [])
     chosen = random.choice(t_idx)
+    chosen_pos = task_pos[chosen]
+    curr_task_pos = np.array(task_pos)[t_idx]
 
     if metric == 'man':
-        chosen_pos = task_pos[chosen]
-        curr_task_pos = np.array(task_pos)[t_idx]
         rel_d = np.abs(curr_task_pos - np.array(chosen_pos)).sum(-1)
     else:
         raise NotImplementedError("only manhattan distance option is implemented")
@@ -20,7 +20,9 @@ def removal(tasks_idx, task_pos, graph, N=2, time_log=None, metric='man'):
     if time_log is None:
         rel_t = 0
     else:
-        raise NotImplementedError
+        chosen_t = time_log[tuple(chosen_pos)]
+        rel_t = [time_log[tuple(t)] - chosen_t for t in curr_task_pos]
+        rel_t = np.abs(rel_t)
 
     rel = rel_t + rel_d
     mink_indices = sorted(range(len(rel)), key=lambda i: rel[i])[:N + 1]  # the first index is as same as chosen
