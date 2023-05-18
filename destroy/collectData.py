@@ -131,7 +131,7 @@ if __name__ == "__main__":
     from multiprocessing import Process
 
     N, M = 5, 50
-    n_process = 1
+    n_process = 10
     n_data = 10
     solver_dir = os.path.join(Path(os.path.realpath(__file__)).parent.parent, 'EECBS/eecbs')
     temp_LNS_dir = os.path.join(Path(os.path.realpath(__file__)).parent.parent, 'EECBS/LNS')
@@ -157,9 +157,9 @@ if __name__ == "__main__":
             run_info['init_save_dir'] = temp_init_dir + str(p) + '/'
 
             run_infos.append(run_info)
-            run(run_info, N, M)
+            # run(run_info, N, M)
 
-        # run_list = [Process(target=run, args=(_info, N, M)) for _info in run_infos]
+        run_list = [Process(target=run, args=(_info, N, M)) for _info in run_infos]
 
         # start process
         for r in run_list:
