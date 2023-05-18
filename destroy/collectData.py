@@ -10,10 +10,10 @@ import numpy as np
 
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from heuristics.hungarian import hungarian
-from heuristics.regret import f_ijk, get_regret
+from heuristics.regret import f_ijk
 from heuristics.shaw import removal
 from utils.scenario import load_scenarios
-from utils.solver import to_solver, solver
+from utils.solver import solver_PBS
 from utils.graph import convert_to_nx
 
 
@@ -58,7 +58,6 @@ def _collectEval(info, solver_dir, save_dir, exp_name):
 
             # get insertion agent index and location
             ag_idx = 0
-            ins_pos = 0
             while True:
                 ag_schedule = assign_idx[ag_idx]
                 if insertion_edge_idx - (len(ag_schedule) + 1) < 0:
@@ -72,15 +71,14 @@ def _collectEval(info, solver_dir, save_dir, exp_name):
             removal_idx.remove(re_ins)
 
         assign_pos = [np.array(info['tasks'])[schedule].tolist() for schedule in temp_assign_idx]
-        cost, _, time_log = solver(
-            info['grid'],
-            info['agents'],
-            assign_pos,
-            ret_log=True,
-            solver_dir=solver_dir,
-            save_dir=save_dir,
-            exp_name=exp_name
-        )
+
+        cost, _, time_log = solver_PBS(info['grid'],
+                                       info['agents'],
+                                       assign_pos,
+                                       ret_log=True,
+                                       solver_dir=solver_dir,
+                                       save_dir=save_dir,
+                                       exp_name=exp_name)
 
         if cost == 'error':
             pass
@@ -112,8 +110,8 @@ def run(run_info, N, M):
 
     coordination = [[a.tolist()] + t for a, t in zip(info['agents'], assign_pos)]
     initGraph = convert_to_nx(assign_id, coordination, info['grid'].shape[0])
-    info['init_cost'], _ = solver(info['grid'], info['agents'], assign_pos, solver_dir=solver_dir, save_dir=init_save,
-                                  exp_name='init')
+    info['init_cost'], _ = solver_PBS(info['grid'], info['agents'], assign_pos, solver_dir=solver_dir,
+                                      save_dir=init_save, exp_name='init')
     if info['init_cost'] == 'error':
         return 'abandon_seed'
 
@@ -133,9 +131,10 @@ if __name__ == "__main__":
     N, M = 5, 50
     n_process = 10
     n_data = 10
-    solver_dir = os.path.join(Path(os.path.realpath(__file__)).parent.parent, 'EECBS/eecbs')
-    temp_LNS_dir = os.path.join(Path(os.path.realpath(__file__)).parent.parent, 'EECBS/LNS')
-    temp_init_dir = os.path.join(Path(os.path.realpath(__file__)).parent.parent, 'EECBS/init')
+
+    solver_dir = os.path.join(Path(os.path.realpath(__file__)).parent.parent, 'PBS/pbs')
+    temp_LNS_dir = os.path.join(Path(os.path.realpath(__file__)).parent.parent, 'PBS/LNS')
+    temp_init_dir = os.path.join(Path(os.path.realpath(__file__)).parent.parent, 'PBS/init')
 
     # make directory per process
     for p in range(n_process):

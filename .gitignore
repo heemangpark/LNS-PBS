@@ -10,6 +10,7 @@ scenarios/
 
 # MAPF solvers
 EECBS/
+PBS/
 
 # temp dirs
 platform/
